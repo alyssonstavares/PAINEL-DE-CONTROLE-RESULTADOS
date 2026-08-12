@@ -4666,17 +4666,26 @@ function rankBadge(i) {
 // Aggregate all filtered data by date and by carrier
 function buildDetailAgg(filtered) {
   const byDate = {}, byCarrier = {};
-  // For DPPH dedup: track seen routeIds per date-bucket and per carrier
+  // DPPH: dedup por rota (Map routeId → {entr, hours})
   const dpphRoutesByDate = {}, dpphRoutesByCarrier = {};
+  // Claims: Set de ID_COM_RECLAMO por bucket (garante distinctCount correto mesmo com rotas multi-linha)
+  const claimSetsByDate = {}, claimSetsByCarrier = {};
 
-  filtered.forEach(r => {
+  // FIX: deduplicar por ROUTE_ID antes de somar desp/entr/orhc/uv/pac/ins.
+  // Rotas com múltiplas linhas no CSV (ex: 2 ID_COM_RECLAMO distintos) inflavam
+  // todos os contadores das abas de detalhe, causando DS/ORHC/DPPH divergentes
+  // dos cards da Visão Geral (que já usavam getRouteLevelRows corretamente).
+  // Claims continuam sendo coletados do filtered bruto via Set para capturar todos os IDs.
+  const dedupedForMetrics = getRouteLevelRows(filtered);
+
+  // Passa 1: métricas de rota (dedup) — desp, entr, orhc, uv, pac, ins
+  dedupedForMetrics.forEach(r => {
     const d = (r[COL.DATA]||'').trim();
     const c = (r[COL.CARRIER]||'N/D').trim();
     const desp = n(r[COL.DESPACHADOS]), entr = n(r[COL.ENTREGUES]);
     const orhcV = COL.ORHC ? r[COL.ORHC] : '';
     const uvV   = n(r[COL.UNVISITED]);
     const pacV  = COL.QTDE_PACOTES ? n(r[COL.QTDE_PACOTES]) : desp;
-    const clV   = (COL.ID_COM_RECLAMO && (r[COL.ID_COM_RECLAMO]||'').trim() !== '') ? 1 : 0;
     const sem   = (r[COL.SEMANA]||'').trim();
     const rid   = COL.ROUTE_ID ? (r[COL.ROUTE_ID]||'').toString().trim() : '';
     const orhHours = COL.ORH_HOURS ? n(r[COL.ORH_HOURS]) : 0;
@@ -4685,12 +4694,13 @@ function buildDetailAgg(filtered) {
       if (!byDate[k]) {
         byDate[k] = { desp:0, entr:0, dpphSum:0, dpphCnt:0, orhcOK:0, orhcTotal:0, uv:0, pac:0, claims:0, sem, ins:{} };
         dpphRoutesByDate[k] = new Map();
+        claimSetsByDate[k]  = new Set();
       }
       byDate[k].desp += desp; byDate[k].entr += entr;
       if (orhcV !== '' && orhcV !== undefined) { byDate[k].orhcTotal++; if(n(orhcV)===1) byDate[k].orhcOK++; }
-      byDate[k].uv += uvV; byDate[k].pac += pacV; byDate[k].claims += clV;
+      byDate[k].uv += uvV; byDate[k].pac += pacV;
       INS_COLS.forEach(col => { byDate[k].ins[col.key] = (byDate[k].ins[col.key]||0) + n(r[col.key]); });
-      // DPPH dedup by route
+      // DPPH já estava com dedup; mantido igual
       if (rid && !dpphRoutesByDate[k].has(rid)) {
         dpphRoutesByDate[k].set(rid, { entr: n(r[COL.ENTREGUES]), hours: orhHours });
       }
@@ -4699,15 +4709,34 @@ function buildDetailAgg(filtered) {
     if (!byCarrier[c]) {
       byCarrier[c] = { desp:0, entr:0, dpphSum:0, dpphCnt:0, orhcOK:0, orhcTotal:0, uv:0, pac:0, claims:0, rotas:0, ins:{} };
       dpphRoutesByCarrier[c] = new Map();
+      claimSetsByCarrier[c]  = new Set();
     }
     byCarrier[c].desp += desp; byCarrier[c].entr += entr; byCarrier[c].rotas++;
     if (orhcV !== '' && orhcV !== undefined) { byCarrier[c].orhcTotal++; if(n(orhcV)===1) byCarrier[c].orhcOK++; }
-    byCarrier[c].uv += uvV; byCarrier[c].pac += pacV; byCarrier[c].claims += clV;
+    byCarrier[c].uv += uvV; byCarrier[c].pac += pacV;
     INS_COLS.forEach(col => { byCarrier[c].ins[col.key] = (byCarrier[c].ins[col.key]||0) + n(r[col.key]); });
     if (rid && !dpphRoutesByCarrier[c].has(rid)) {
       dpphRoutesByCarrier[c].set(rid, { entr: n(r[COL.ENTREGUES]), hours: orhHours });
     }
   });
+
+  // Passa 2: claims usando filtered bruto — captura todos os ID_COM_RECLAMO distintos
+  // (uma rota com 2 reclamos tem 2 linhas; o dedup acima pegaria só 1 linha e perderia 1 claim)
+  filtered.forEach(r => {
+    if (!COL.ID_COM_RECLAMO) return;
+    const clId = (r[COL.ID_COM_RECLAMO]||'').trim();
+    if (!clId) return;
+    const d = (r[COL.DATA]||'').trim();
+    const c = (r[COL.CARRIER]||'N/D').trim();
+    [d, '__all__'].forEach(k => {
+      if (claimSetsByDate[k]) claimSetsByDate[k].add(clId);
+    });
+    if (claimSetsByCarrier[c]) claimSetsByCarrier[c].add(clId);
+  });
+
+  // Consolidar claims dos Sets nos agregados
+  Object.keys(byDate).forEach(k => { byDate[k].claims = claimSetsByDate[k] ? claimSetsByDate[k].size : 0; });
+  Object.keys(byCarrier).forEach(c => { byCarrier[c].claims = claimSetsByCarrier[c] ? claimSetsByCarrier[c].size : 0; });
 
   // Consolidate DPPH: sum(entr) / sum(hours) over unique routes
   function consolidateDpph(agg, routesMap) {
