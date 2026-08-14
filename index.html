@@ -452,12 +452,20 @@ table.detail tr:hover td { background: var(--surface-1); }
 
 <header>
   <h1>📦 Dashboard de Indicadores Logísticos</h1>
-  <div style="display:flex;align-items:center;gap:12px;">
-    <span id="headerInfo">Nenhum arquivo carregado</span>
+  <div style="display:flex;align-items:center;gap:10px;flex:1;justify-content:center;min-width:0;">
+    <span id="headerInfo" style="font-size:12px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Nenhum arquivo carregado</span>
     <span id="nextRefreshInfo" style="font-size:11px;color:#aaa;white-space:nowrap"></span>
-    <button id="remoteRefreshBtn" onclick="carregarDadosOnline(true)" style="display:none;padding:6px 14px;border:none;border-radius:var(--radius);background:#FFE600;color:#111110;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">↻ Atualizar online</button>
-    <button id="reloadBtn" onclick="document.getElementById('fileInputReload').click()" style="display:none;padding:6px 14px;border:0.5px solid #777;border-radius:var(--radius);background:transparent;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📂 Arquivo manual</button>
+    <button id="remoteRefreshBtn" onclick="carregarDadosOnline(true)" style="display:none;padding:6px 12px;border:none;border-radius:var(--radius);background:#FFE600;color:#111110;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">↻ Atualizar</button>
+    <button id="reloadBtn" onclick="document.getElementById('fileInputReload').click()" style="display:none;padding:6px 12px;border:0.5px solid #777;border-radius:var(--radius);background:transparent;color:#fff;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">📂 Manual</button>
     <input type="file" id="fileInputReload" accept=".csv,.xlsx,.xls,.tsv" style="display:none">
+  </div>
+  <div id="headerActionBtns" style="display:none;align-items:center;gap:8px;flex-shrink:0;">
+    <button id="btnExportExcelHeader" onclick="exportRelatorioExcel()" title="Baixar relatório Semana vs Semana em Excel" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:rgba(255,255,255,0.10);color:#fff;border:0.5px solid rgba(255,255,255,0.25);border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s;">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>Baixar Excel
+    </button>
+    <button id="btnPlanoAcaoHeader" onclick="openPlanoAcaoPopup()" title="Abrir Plano de Ação — transportadoras fora da meta" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:#25D366;color:#fff;border:none;border-radius:var(--radius);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.186-1.622A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.373l-.358-.214-3.724.976.997-3.622-.235-.373A9.818 9.818 0 1112 21.818z"/></svg>Plano de Ação
+    </button>
   </div>
 </header>
 
@@ -595,20 +603,6 @@ table.detail tr:hover td { background: var(--surface-1); }
   <div id="tabGeral" class="tab-section active">
   <div class="main-content">
     <div class="kpi-grid" id="kpiGrid"></div>
-    <div class="detail-card" style="margin-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px">
-      <div>
-        <div class="detail-card-title" style="margin:0;border:0;padding:0">📊 Relatório Semana vs Semana</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Excel com todos os indicadores por período, DS por SVC, resumo por MLP e semana vs semana por dia — do recorte de filtros ativo.</div>
-      </div>
-      <button class="wa-btn" id="btnExportExcel" onclick="exportRelatorioExcel()"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/></svg>Baixar Excel</button>
-    </div>
-    <div class="detail-card" id="cardPlanoAcao" style="margin-bottom:0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px">
-      <div>
-        <div class="detail-card-title" style="margin:0;border:0;padding:0">🎯 Plano de Ação — Transportadoras fora da meta</div>
-        <div id="detTblPlanoAcaoCount" style="font-size:11px;color:var(--text-muted);margin-top:4px"></div>
-      </div>
-      <button class="wa-btn" onclick="openPlanoAcaoPopup()"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.186-1.622A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.373l-.358-.214-3.724.976.997-3.622-.235-.373A9.818 9.818 0 1112 21.818z"/></svg>Abrir Plano de Ação</button>
-    </div>
     <div class="charts-grid" id="chartsGrid"></div>
     <div class="summary-table-card" style="margin-bottom:16px">
       <div class="table-header">Detalhamento por grupo</div>
@@ -1688,7 +1682,7 @@ const COL = {};
    2) Cole abaixo a URL terminada em output=csv.
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
-const REMOTE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg-gcdpvP8aagiJ9q_5naAh63sKBZmsEcm496Yf6xUl8ZQvu5iXqsXuTe_Qeef8RW7VG871RFOdT_T/pub?gid=1727561675&single=true&output=csv';
+const REMOTE_CSV_URL = 'https://raw.githubusercontent.com/alyssonstavares/PAINEL-DE-CONTROLE-RESULTADOS/main/data/base_sal1.csv';
 /* ══════════════════════════════════════════
    ASSISTENTE DE IA (opcional)
    Aponta pra função serverless da Vercel que chama a OpenAI (api/ask.js).
@@ -2204,14 +2198,20 @@ function _planoAcaoRenderTable(rows) {
 }
 
 function renderPlanoAcao() {
-  const cnt = document.getElementById('detTblPlanoAcaoCount');
-  if (!cnt) return;
   _planoAcaoDrillStore = [];
   const rows = _planoAcaoBuildRows(_planoAcaoAgg());
   _planoAcaoRows = rows;
-  cnt.textContent = rows.length
-    ? `${rows.length.toLocaleString('pt-BR')} transportadora(s) fora de pelo menos 1 meta no recorte filtrado`
-    : '✅ Todas as transportadoras estão dentro das metas no recorte filtrado.';
+  // Atualiza botão do header com badge de contagem
+  const btnHeader = document.getElementById('btnPlanoAcaoHeader');
+  if (btnHeader) {
+    btnHeader.title = rows.length
+      ? `${rows.length} transportadora(s) fora de pelo menos 1 meta`
+      : 'Todas as transportadoras dentro das metas';
+    const badge = rows.length > 0
+      ? ` <span style="background:rgba(255,255,255,0.25);border-radius:10px;padding:1px 6px;font-size:10px;">${rows.length}</span>`
+      : '';
+    btnHeader.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.186-1.622A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.373l-.358-.214-3.724.976.997-3.622-.235-.373A9.818 9.818 0 1112 21.818z"/></svg>Plano de Ação${badge}`;
+  }
 }
 
 function _planoAcaoReportText(groupLabel, rows) {
@@ -7085,6 +7085,8 @@ function processData(data, meta = {}) {
   document.getElementById('headerInfo').textContent =
     `${data.length.toLocaleString('pt-BR')} registros · ${source} · ${timing}`;
   document.getElementById('reloadBtn').style.display = 'block';
+  const headerBtns = document.getElementById('headerActionBtns');
+  if (headerBtns) headerBtns.style.display = 'flex';
 
   populateFilters();
   update();
@@ -7310,7 +7312,7 @@ function _xlsxTableToAOA(tableId) {
 }
 
 async function exportRelatorioExcel() {
-  const btn = document.getElementById('btnExportExcel');
+  const btn = document.getElementById('btnExportExcelHeader');
   const originalTxt = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = 'Gerando...'; }
   try {
