@@ -1683,7 +1683,7 @@ const COL = {};
    2) Cole abaixo a URL terminada em output=csv.
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
-const REMOTE_CSV_URL = ''; // não usado — dados lidos via Grid SDK
+const REMOTE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg-gcdpvP8aagiJ9q_5naAh63sKBZmsEcm496Yf6xUl8ZQvu5iXqsXuTe_Qeef8RW7VG871RFOdT_T/pub?gid=1727561675&single=true&output=csv'; // Sheets publicado — fallback para Vercel
 const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
 const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
@@ -7198,14 +7198,16 @@ async function carregarDadosOnline(manual = false) {
       normalized = normalizeRows(allRows);
 
     } else {
-      // ── Fallback: leitura via CSV publicado (limitado a 50k pelo Google) ──
-      const fallbackUrl = `https://docs.google.com/spreadsheets/d/${GRID_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GRID_SHEET_TAB)}&_t=${Date.now()}`;
+      // ── Fallback: leitura via CSV publicado do Sheets (Vercel e uso local) ──
+      const fallbackUrl = REMOTE_CSV_URL.trim()
+        ? REMOTE_CSV_URL.trim() + '&_t=' + Date.now()
+        : `https://docs.google.com/spreadsheets/d/${GRID_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GRID_SHEET_TAB)}&_t=${Date.now()}`;
       const response = await fetch(fallbackUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const csvText = await response.text();
       const parsed = Papa.parse(csvText, {
         header: true, skipEmptyLines: 'greedy', dynamicTyping: false,
-        transformHeader: h => String(h || '').replace(/^\uFEFF/, '').trim()
+        transformHeader: h => String(h || '').replace(/^﻿/, '').trim()
       });
       normalized = normalizeRows(parsed.data);
     }
