@@ -7,6 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="/d/_assets/grid-sdk.js"></script>
 <style>
 :root {
   --bg:             #f4f3ef;
@@ -1682,7 +1683,9 @@ const COL = {};
    2) Cole abaixo a URL terminada em output=csv.
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
-const REMOTE_CSV_URL = 'https://raw.githubusercontent.com/alyssonstavares/PAINEL-DE-CONTROLE-RESULTADOS/main/data/base_sal1.csv';
+const REMOTE_CSV_URL = ''; // não usado — dados lidos via Grid SDK
+const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
+const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
    ASSISTENTE DE IA (opcional)
    Aponta pra função serverless da Vercel que chama a OpenAI (api/ask.js).
@@ -3379,12 +3382,12 @@ function persistState() {
     Object.keys(msState).forEach(k => filters[k] = [...msState[k]]);
     const openCharts = [...document.querySelectorAll('#chartsGrid .chart-collapse.open')].map(el => el.id);
     const excluir = document.getElementById('toggleExcluirAbertas')?.checked ?? true;
-    localStorage.setItem(LS_KEY, JSON.stringify({ filters, openCharts, excluir }));
+    try { window.GRID_STATE = window.GRID_STATE || {}; window.GRID_STATE[LS_KEY] = { filters, openCharts, excluir }; } catch(e) {}
   } catch(e) {}
 }
 function loadPersistedFilters() {
   try {
-    const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    const st = (window.GRID_STATE && window.GRID_STATE[LS_KEY]) || null;
     if (!st) return;
     if (st.filters) Object.keys(msState).forEach(k => {
       if (Array.isArray(st.filters[k])) st.filters[k].forEach(v => msState[k].add(v));
@@ -3395,7 +3398,7 @@ function loadPersistedFilters() {
 }
 function restoreOpenCharts() {
   try {
-    const st = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
+    const st = (window.GRID_STATE && window.GRID_STATE[LS_KEY]) || null;
     if (!st || !Array.isArray(st.openCharts)) return; // sem memória → mantém o padrão (todos abertos)
     const wanted = new Set(st.openCharts);
     document.querySelectorAll('#chartsGrid .chart-collapse').forEach(el => {
@@ -7005,6 +7008,19 @@ function renderPivotTableDS() {
 }
 
 function normalizeRows(rows) {
+  // Converte datas no formato "MON AUG 10 2026 00:00:00 GMT-0300 (BRASILIA)" → "10/08/2026"
+  // Isso acontece quando o Apps Script ou o Grid SDK serializa objetos Date do Sheets como string
+  function _normDateVal(v) {
+    const s = String(v).trim();
+    // Detecta o padrão: "DDD MMM DD YYYY HH:MM:SS GMT..."
+    const m = s.match(/^[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})/);
+    if (!m) return s;
+    const months = { Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+                     Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12' };
+    const mm = months[m[1]]; if (!mm) return s;
+    const dd = m[2].padStart(2,'0');
+    return `${dd}/${mm}/${m[3]}`;
+  }
   return (rows || [])
     .filter(row => row && Object.values(row).some(v => String(v ?? '').trim() !== ''))
     .map(row => {
@@ -7012,7 +7028,12 @@ function normalizeRows(rows) {
       for (const [key, value] of Object.entries(row)) {
         const cleanKey = String(key || '').replace(/^\uFEFF/, '').trim();
         if (!cleanKey) continue;
-        out[cleanKey] = value === null || value === undefined ? '' : String(value).trim();
+        const raw = value === null || value === undefined ? '' : String(value).trim();
+        // Aplica conversão de data só em colunas de data (nome contém DATA, DT, DATE, INICIO, FIM)
+        const isDateCol = /DATA|DATE|_DT|DT_|INICIO|FIM|INICIO/i.test(cleanKey);
+        out[cleanKey] = (isDateCol && raw.match(/^[A-Za-z]{3}\s+[A-Za-z]{3}\s+\d/))
+          ? _normDateVal(raw)
+          : raw;
       }
       return out;
     });
@@ -7101,60 +7122,117 @@ function showError(msg) {
 }
 
 async function carregarDadosOnline(manual = false) {
-  const configuredUrl = REMOTE_CSV_URL.trim();
-  if (!configuredUrl) {
-    if (manual) showError('Configure REMOTE_CSV_URL com a URL CSV publicada da planilha.');
-    return false;
-  }
   if (remoteLoadInProgress) return false;
-
   remoteLoadInProgress = true;
+
   const overlay = document.getElementById('loadingOverlay');
-  const button = document.getElementById('remoteRefreshBtn');
+  const button  = document.getElementById('remoteRefreshBtn');
   const showOverlay = manual || rawData.length === 0;
 
   if (showOverlay) overlay.classList.add('visible');
-  if (button) {
-    button.disabled = true;
-    button.textContent = '⏳ Atualizando...';
-  }
+  if (button) { button.disabled = true; button.textContent = '⏳ Carregando...'; }
+
+  // Tenta via Grid SDK (quando hospedado no Grid da MELI)
+  // O SDK lê a planilha sem limite de 50k linhas — lê tudo que estiver na aba
+  const useGridSDK = typeof Grid !== 'undefined' && GRID_SHEET_ID;
 
   try {
-    const url = new URL(configuredUrl);
-    url.searchParams.set('_t', String(Date.now()));
+    let normalized = [];
 
-    const response = await fetch(url.toString(), { cache: 'no-store' });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (useGridSDK) {
+      // ── Leitura via Grid SDK ──
+      // Configura o SDK com o doc_id extraído da URL (ex.: /d/<docId>/view)
+      const docIdMatch = location.pathname.match(/\/d\/([^/]+)/);
+      const docId = docIdMatch ? docIdMatch[1] : '';
+      if (docId) Grid.configure({ docId });
 
-    const csvText = await response.text();
-    const parsed = Papa.parse(csvText, {
-      header: true,
-      skipEmptyLines: 'greedy',
-      dynamicTyping: false,
-      transformHeader: h => String(h || '').replace(/^\uFEFF/, '').trim()
-    });
+      // Faz a leitura em duas passagens para cobrir até 200k linhas:
+      // passagem 1: linhas 1–100000 | passagem 2: 100001–200000
+      // O SDK aceita ranges no estilo A1 notation (ex.: DASH_EXPORT!A1:BZZ100000)
+      const MAX_COLS = 'BZZ'; // mais que suficiente para 74 colunas
+      const ranges = [
+        `${GRID_SHEET_TAB}!A1:${MAX_COLS}100000`,
+        `${GRID_SHEET_TAB}!A100001:${MAX_COLS}200000`,
+      ];
 
-    const normalized = normalizeRows(parsed.data);
-    if (!normalized.length) throw new Error('A fonte CSV retornou zero registros.');
+      let headers = null;
+      let allRows = [];
 
-    const accepted = processData(normalized, {
-      source: 'remote',
-      loadedAt: new Date()
-    });
-    if (!accepted) throw new Error('O esquema da fonte online não é compatível com o dashboard.');
+      for (let i = 0; i < ranges.length; i++) {
+        let resp;
+        try {
+          resp = await Grid.sheets.get(GRID_SHEET_ID, ranges[i]);
+        } catch (e) {
+          // Segunda faixa pode lançar erro se não houver dados — ok, para aqui
+          if (i > 0) break;
+          throw e;
+        }
+
+        const values = (resp && resp.values) ? resp.values : resp;
+        if (!values || !values.length) break;
+
+        if (i === 0) {
+          // Primeira linha = cabeçalhos
+          headers = values[0].map(h => String(h || '').replace(/^\uFEFF/, '').trim());
+          for (let r = 1; r < values.length; r++) {
+            const row = {};
+            headers.forEach((h, ci) => { row[h] = values[r][ci] !== undefined ? String(values[r][ci]) : ''; });
+            allRows.push(row);
+          }
+        } else {
+          // Passagens seguintes: sem cabeçalho (já temos)
+          for (let r = 0; r < values.length; r++) {
+            // Se a primeira coluna estiver vazia, chegamos no fim dos dados
+            if (!values[r][0] && !values[r][1]) break;
+            const row = {};
+            headers.forEach((h, ci) => { row[h] = values[r][ci] !== undefined ? String(values[r][ci]) : ''; });
+            allRows.push(row);
+          }
+        }
+
+        // Se retornou menos de 99999 linhas de dados, não há mais páginas
+        const dataRows = i === 0 ? values.length - 1 : values.length;
+        if (dataRows < 99999) break;
+      }
+
+      normalized = normalizeRows(allRows);
+
+    } else {
+      // ── Fallback: leitura via CSV publicado (limitado a 50k pelo Google) ──
+      const fallbackUrl = `https://docs.google.com/spreadsheets/d/${GRID_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GRID_SHEET_TAB)}&_t=${Date.now()}`;
+      const response = await fetch(fallbackUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const csvText = await response.text();
+      const parsed = Papa.parse(csvText, {
+        header: true, skipEmptyLines: 'greedy', dynamicTyping: false,
+        transformHeader: h => String(h || '').replace(/^\uFEFF/, '').trim()
+      });
+      normalized = normalizeRows(parsed.data);
+    }
+
+    if (!normalized.length) throw new Error('A fonte retornou zero registros.');
+
+    const accepted = processData(normalized, { source: 'remote', loadedAt: new Date() });
+    if (!accepted) throw new Error('O esquema da fonte não é compatível com o dashboard.');
 
     return true;
+
   } catch (error) {
-    console.error('Falha ao carregar a fonte online:', error);
-    showError(`Não foi possível atualizar os dados online: ${error.message}`);
+    console.error('Falha ao carregar dados:', error);
+    // Se for erro de OAuth expirado no Grid, orienta o usuário
+    const msg = String(error.message || error);
+    if (msg.includes('token') || msg.includes('oauth') || msg.includes('401')) {
+      showError('Token do Google expirado no Grid. Acesse grid.melioffice.com/google/oauth/start com VPN para reconectar.');
+    } else if (msg.includes('429')) {
+      showError('Muitas requisições ao Grid (429). Aguarde 1 minuto e tente atualizar novamente.');
+    } else {
+      showError(`Não foi possível carregar os dados: ${msg}`);
+    }
     return false;
   } finally {
     remoteLoadInProgress = false;
     overlay.classList.remove('visible');
-    if (button) {
-      button.disabled = false;
-      button.textContent = '↻ Atualizar online';
-    }
+    if (button) { button.disabled = false; button.textContent = '↻ Atualizar'; }
   }
 }
 
@@ -7231,11 +7309,11 @@ function scheduleRemoteRefresh() {
 }
 
 function initRemoteDataSource() {
-  if (!REMOTE_CSV_URL.trim()) return;
-
+  // Inicializa leitura via Grid SDK (sem limite de linhas)
+  // ou fallback CSV se estiver fora do Grid
   const button = document.getElementById('remoteRefreshBtn');
   if (button) button.style.display = 'block';
-  document.getElementById('headerInfo').textContent = 'Carregando dados da fonte online...';
+  document.getElementById('headerInfo').textContent = 'Carregando dados...';
 
   carregarDadosOnline(false).finally(scheduleRemoteRefresh);
 }
@@ -7883,21 +7961,22 @@ zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('
 function closeWelcome() {
   const dontShow = document.getElementById('welcomeDontShow')?.checked;
   try {
-    if (dontShow) localStorage.setItem('welcomeDismissed', '1');
-    else localStorage.removeItem('welcomeDismissed');
+    window.GRID_STATE = window.GRID_STATE || {};
+    if (dontShow) window.GRID_STATE['welcomeDismissed'] = '1';
+    else delete window.GRID_STATE['welcomeDismissed'];
   } catch (e) {}
   document.getElementById('welcomeBackdrop').classList.remove('open');
 }
 function openWelcomeInfo() {
   const chk = document.getElementById('welcomeDontShow');
-  try { if (chk) chk.checked = localStorage.getItem('welcomeDismissed') === '1'; } catch (e) {}
+  try { if (chk) chk.checked = (window.GRID_STATE && window.GRID_STATE['welcomeDismissed'] === '1'); } catch (e) {}
   document.getElementById('welcomeBackdrop').classList.add('open');
 }
 function setupSupportFab() {
   const fab = document.getElementById('supportFab');
   if (!fab) return;
   try {
-    const p = JSON.parse(localStorage.getItem('fabPos') || 'null');
+    const p = (window.GRID_STATE && window.GRID_STATE['fabPos']) || null;
     if (p && typeof p.left === 'number' && typeof p.top === 'number') {
       fab.style.left = p.left + 'px'; fab.style.top = p.top + 'px'; fab.style.right = 'auto';
     }
@@ -7927,7 +8006,7 @@ function setupSupportFab() {
     dragging = false; fab.style.transition = '';
     if (moved) {
       const r = fab.getBoundingClientRect();
-      try { localStorage.setItem('fabPos', JSON.stringify({ left: Math.round(r.left), top: Math.round(r.top) })); } catch (e) {}
+      try { window.GRID_STATE = window.GRID_STATE || {}; window.GRID_STATE['fabPos'] = { left: Math.round(r.left), top: Math.round(r.top) }; } catch (e) {}
     } else {
       openWelcomeInfo();
     }
@@ -7941,7 +8020,7 @@ function setupSupportFab() {
 }
 function showWelcome() {
   let dismissed = false;
-  try { dismissed = localStorage.getItem('welcomeDismissed') === '1'; } catch (e) {}
+  try { dismissed = window.GRID_STATE && window.GRID_STATE['welcomeDismissed'] === '1'; } catch (e) {}
   if (!dismissed) document.getElementById('welcomeBackdrop').classList.add('open');
 }
 document.addEventListener('keydown', e => {
