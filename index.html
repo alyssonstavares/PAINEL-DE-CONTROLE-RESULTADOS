@@ -598,7 +598,6 @@ table.detail tr:hover td { background: var(--surface-1); }
     <button class="tab-btn" onclick="showMainTab('tabEncerramento',this)">⏱ Encerramento D+</button>
     <button class="tab-btn" onclick="showMainTab('tabDobra',this)">🔄 Dobra de Rotas</button>
     <button class="tab-btn" onclick="showMainTab('tabOfensores',this)">🚨 Top Ofensores</button>
-    <button class="tab-btn" onclick="showMainTab('tabInsucessos',this)">📋 Insucessos por Pacote</button>
   </div>
 
   <!-- ══════ TAB: VISÃO GERAL ══════ -->
@@ -1578,92 +1577,6 @@ table.detail tr:hover td { background: var(--surface-1); }
     </div>
   </div>
 
-  <!-- ══════ TAB: INSUCESSOS POR PACOTE ══════ -->
-  <div id="tabInsucessos" class="tab-section">
-    <div class="detail-content">
-
-      <!-- Estado de carregamento -->
-      <div id="insDetalheStatus" style="display:none;padding:14px 18px;border-radius:var(--radius);background:var(--surface-1);border:0.5px solid var(--border);font-size:13px;color:var(--text-secondary);text-align:center">
-        ⏳ Carregando detalhamento de insucessos...
-      </div>
-      <div id="insDetalheError" style="display:none;padding:14px 18px;border-radius:var(--radius);background:var(--danger-bg);border-left:4px solid var(--danger);font-size:13px;color:var(--danger-text)"></div>
-
-      <!-- KPI cards -->
-      <div class="detail-kpi-row" id="insDetalheKpis" style="display:none"></div>
-
-      <!-- Filtro local -->
-      <div id="insDetalheFilters" style="display:none;display:none;align-items:center;gap:10px;flex-wrap:wrap;padding:4px 0 8px;border-bottom:0.5px solid var(--border);margin-bottom:4px">
-        <div class="filter-group">
-          <label>Sub-status</label>
-          <div class="ms-trigger" id="filterInsSubStatus" tabindex="0">Todos</div>
-          <div class="ms-dropdown" id="dropInsSubStatus">
-            <div class="ms-search"><input type="text" placeholder="Buscar..." id="searchInsSubStatus"></div>
-            <div class="ms-actions">
-              <button class="ms-action-btn" onclick="msInsSelectAll()">Todos</button>
-              <button class="ms-action-btn" onclick="msInsClear()">Limpar</button>
-            </div>
-            <div id="optInsSubStatus"></div>
-          </div>
-        </div>
-        <div class="filter-group">
-          <label>Transportadora</label>
-          <div class="ms-trigger" id="filterInsTrans" tabindex="0">Todas</div>
-          <div class="ms-dropdown" id="dropInsTrans">
-            <div class="ms-search"><input type="text" placeholder="Buscar..." id="searchInsTrans"></div>
-            <div class="ms-actions">
-              <button class="ms-action-btn" onclick="msInsTransSelectAll()">Todos</button>
-              <button class="ms-action-btn" onclick="msInsTransClear()">Limpar</button>
-            </div>
-            <div id="optInsTrans"></div>
-          </div>
-        </div>
-        <div class="filter-group">
-          <label>Data</label>
-          <div class="ms-trigger" id="filterInsData" tabindex="0">Todas</div>
-          <div class="ms-dropdown" id="dropInsData">
-            <div class="ms-search"><input type="text" placeholder="Buscar..." id="searchInsData"></div>
-            <div class="ms-actions">
-              <button class="ms-action-btn" onclick="msInsDataSelectAll()">Todos</button>
-              <button class="ms-action-btn" onclick="msInsDataClear()">Limpar</button>
-            </div>
-            <div id="optInsData"></div>
-          </div>
-        </div>
-        <input type="text" id="insDetalheSearch" placeholder="Buscar por ID envio, rota, motorista..." oninput="renderInsDetalhe()" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:5px 10px;font-size:12px;background:var(--surface-1);color:var(--text-primary);outline:none;width:260px;">
-        <button class="filter-clear" onclick="limparFiltrosInsDetalhe()">↺ Limpar</button>
-        <span id="insDetalheCount" style="font-size:11px;color:var(--text-muted)"></span>
-        <button class="wa-btn" onclick="copiarInsDetalhe()" style="margin-left:auto">📋 Copiar lista</button>
-      </div>
-
-      <!-- Gráfico por sub-status -->
-      <div class="detail-card" id="insDetalheChartCard" style="display:none">
-        <div class="detail-card-title">Insucessos por Motivo — últimos 15 dias</div>
-        <div style="position:relative;height:300px"><canvas id="chartInsDetalhe"></canvas></div>
-      </div>
-
-      <!-- Tabela -->
-      <div class="detail-card" id="insDetalheTblCard" style="display:none">
-        <div class="detail-card-title">Detalhamento por Pacote</div>
-        <div class="detail-table-wrap" style="max-height:560px">
-          <table class="dtbl" id="tblInsDetalhe">
-            <thead><tr>
-              <th onclick="sortDtbl('tblInsDetalhe',0)">#</th>
-              <th onclick="sortDtbl('tblInsDetalhe',1)">ID Envio</th>
-              <th onclick="sortDtbl('tblInsDetalhe',2)">Data</th>
-              <th onclick="sortDtbl('tblInsDetalhe',3)">Transportadora</th>
-              <th onclick="sortDtbl('tblInsDetalhe',4)">ID Motorista</th>
-              <th onclick="sortDtbl('tblInsDetalhe',5)">ID Rota</th>
-              <th onclick="sortDtbl('tblInsDetalhe',6)">Motivo Atual</th>
-              <th onclick="sortDtbl('tblInsDetalhe',7)">Sub-status Original</th>
-            </tr></thead>
-            <tbody id="tblInsDetalheBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
 </div><!-- end #dashboard -->
 
 <!-- MODAL WHATSAPP -->
@@ -1771,7 +1684,6 @@ const COL = {};
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
 const REMOTE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg-gcdpvP8aagiJ9q_5naAh63sKBZmsEcm496Yf6xUl8ZQvu5iXqsXuTe_Qeef8RW7VG871RFOdT_T/pub?gid=1727561675&single=true&output=csv'; // Sheets publicado — fallback para Vercel
-const REMOTE_INS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg-gcdpvP8aagiJ9q_5naAh63sKBZmsEcm496Yf6xUl8ZQvu5iXqsXuTe_Qeef8RW7VG871RFOdT_T/pub?gid=1501530652&single=true&output=csv'; // aba INSUCESSOS_DETAIL
 const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
 const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
@@ -2998,8 +2910,6 @@ function update() {
     if (id === 'tabEncerramento') renderEncerramento();
     if (id === 'tabDobra') renderDetailDobra();
     if (id === 'tabOfensores') renderOfensores();
-  if (id === 'tabInsucessos') carregarInsDetalhe();
-    if (id === 'tabInsucessos') carregarInsDetalhe();
   }
   persistState();
 }
@@ -8119,196 +8029,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('welcomeBackdrop').classList.contains('open')) closeWelcome();
 });
 
-// ══════════════════════════════════════════════════════════════
-//  ABA INSUCESSOS POR PACOTE
-// ══════════════════════════════════════════════════════════════
-let _insRawData    = null;   // dados brutos carregados uma vez
-let _insFiltered   = [];     // dados após filtros locais
-let _insSubStatus  = [];     // opções de sub-status
-let _insTrans      = [];     // opções de transportadora
-let _insData       = [];     // opções de data
-let _insSelSubStatus = new Set();
-let _insSelTrans    = new Set();
-let _insSelData     = new Set();
-let _insChartInst   = null;
-
-async function carregarInsDetalhe() {
-  if (_insRawData) { renderInsDetalhe(); return; } // já carregado
-
-  const status = document.getElementById('insDetalheStatus');
-  const errEl  = document.getElementById('insDetalheError');
-  status.style.display = 'block';
-  errEl.style.display  = 'none';
-
-  try {
-    const url = REMOTE_INS_URL + '&_t=' + Date.now();
-    const resp = await fetch(url, { cache: 'no-store' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const csv = await resp.text();
-    const parsed = Papa.parse(csv, {
-      header: true, skipEmptyLines: 'greedy', dynamicTyping: false,
-      transformHeader: h => String(h || '').replace(/^\uFEFF/, '').trim()
-    });
-
-    _insRawData = parsed.data.filter(r => r['Id_Envio'] || r['id_envio']);
-
-    // Extrair opções únicas
-    _insSubStatus = [...new Set(_insRawData.map(r => (r['Sub_status']||r['sub_status']||'').trim()).filter(Boolean))].sort();
-    _insTrans     = [...new Set(_insRawData.map(r => (r['Transportadora']||'').trim()).filter(Boolean))].sort();
-    _insData      = [...new Set(_insRawData.map(r => (r['Data_final']||'').trim()).filter(Boolean))].sort().reverse();
-
-    // Inicializa todos selecionados
-    _insSelSubStatus = new Set(_insSubStatus);
-    _insSelTrans     = new Set(_insTrans);
-    _insSelData      = new Set(_insData);
-
-    // Popula dropdowns
-    _insPopulateDropdown('optInsSubStatus', _insSubStatus, _insSelSubStatus, 'insSubStatus');
-    _insPopulateDropdown('optInsTrans',     _insTrans,     _insSelTrans,     'insTrans');
-    _insPopulateDropdown('optInsData',      _insData,      _insSelData,      'insData');
-
-    status.style.display = 'none';
-    document.getElementById('insDetalheFilters').style.display = 'flex';
-    document.getElementById('insDetalheKpis').style.display    = 'flex';
-    document.getElementById('insDetalheChartCard').style.display = '';
-    document.getElementById('insDetalheTblCard').style.display  = '';
-
-    renderInsDetalhe();
-
-  } catch(e) {
-    status.style.display = 'none';
-    errEl.style.display  = 'block';
-    errEl.textContent    = `Erro ao carregar detalhamento: ${e.message}`;
-  }
-}
-
-function _insPopulateDropdown(containerId, options, selected, key) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  el.innerHTML = options.map(v =>
-    `<label class="ms-opt"><input type="checkbox" ${selected.has(v)?'checked':''} onchange="_insToggle('${key}','${v.replace(/'/g,"\\'")}',this.checked)">${v}</label>`
-  ).join('');
-}
-
-function _insToggle(key, val, checked) {
-  const map = { insSubStatus: _insSelSubStatus, insTrans: _insSelTrans, insData: _insSelData };
-  if (checked) map[key].add(val); else map[key].delete(val);
-  _insUpdateTrigger(key);
-  renderInsDetalhe();
-}
-
-function _insUpdateTrigger(key) {
-  const map = {
-    insSubStatus: { trigger:'filterInsSubStatus', sel:_insSelSubStatus, all:_insSubStatus },
-    insTrans:     { trigger:'filterInsTrans',     sel:_insSelTrans,     all:_insTrans },
-    insData:      { trigger:'filterInsData',      sel:_insSelData,      all:_insData },
-  };
-  const cfg = map[key]; if (!cfg) return;
-  const el = document.getElementById(cfg.trigger); if (!el) return;
-  el.textContent = cfg.sel.size === cfg.all.length ? (key === 'insData' ? 'Todas' : 'Todos')
-    : cfg.sel.size === 0 ? 'Nenhum'
-    : `${cfg.sel.size} selecionados`;
-}
-
-function msInsSelectAll()      { _insSubStatus.forEach(v=>_insSelSubStatus.add(v)); _insPopulateDropdown('optInsSubStatus',_insSubStatus,_insSelSubStatus,'insSubStatus'); _insUpdateTrigger('insSubStatus'); renderInsDetalhe(); }
-function msInsClear()          { _insSelSubStatus.clear(); _insPopulateDropdown('optInsSubStatus',_insSubStatus,_insSelSubStatus,'insSubStatus'); _insUpdateTrigger('insSubStatus'); renderInsDetalhe(); }
-function msInsTransSelectAll() { _insTrans.forEach(v=>_insSelTrans.add(v)); _insPopulateDropdown('optInsTrans',_insTrans,_insSelTrans,'insTrans'); _insUpdateTrigger('insTrans'); renderInsDetalhe(); }
-function msInsTransClear()     { _insSelTrans.clear(); _insPopulateDropdown('optInsTrans',_insTrans,_insSelTrans,'insTrans'); _insUpdateTrigger('insTrans'); renderInsDetalhe(); }
-function msInsDataSelectAll()  { _insData.forEach(v=>_insSelData.add(v)); _insPopulateDropdown('optInsData',_insData,_insSelData,'insData'); _insUpdateTrigger('insData'); renderInsDetalhe(); }
-function msInsDataClear()      { _insSelData.clear(); _insPopulateDropdown('optInsData',_insData,_insSelData,'insData'); _insUpdateTrigger('insData'); renderInsDetalhe(); }
-
-function limparFiltrosInsDetalhe() {
-  _insSelSubStatus = new Set(_insSubStatus);
-  _insSelTrans     = new Set(_insTrans);
-  _insSelData      = new Set(_insData);
-  document.getElementById('insDetalheSearch').value = '';
-  _insPopulateDropdown('optInsSubStatus',_insSubStatus,_insSelSubStatus,'insSubStatus');
-  _insPopulateDropdown('optInsTrans',    _insTrans,    _insSelTrans,    'insTrans');
-  _insPopulateDropdown('optInsData',     _insData,     _insSelData,     'insData');
-  ['insSubStatus','insTrans','insData'].forEach(k=>_insUpdateTrigger(k));
-  renderInsDetalhe();
-}
-
-function renderInsDetalhe() {
-  if (!_insRawData) return;
-  const q = (document.getElementById('insDetalheSearch')?.value||'').toLowerCase().trim();
-
-  _insFiltered = _insRawData.filter(r => {
-    const sub   = (r['Sub_status']||r['sub_status']||'').trim();
-    const trans = (r['Transportadora']||'').trim();
-    const data  = (r['Data_final']||'').trim();
-    if (!_insSelSubStatus.has(sub))  return false;
-    if (!_insSelTrans.has(trans))    return false;
-    if (!_insSelData.has(data))      return false;
-    if (q) {
-      const row = Object.values(r).join(' ').toLowerCase();
-      if (!row.includes(q)) return false;
-    }
-    return true;
-  });
-
-  // KPI cards
-  const kpiEl = document.getElementById('insDetalheKpis');
-  const byMotivo = {};
-  _insFiltered.forEach(r => {
-    const m = (r['Sub_status']||r['sub_status']||'Outros').trim();
-    byMotivo[m] = (byMotivo[m]||0) + 1;
-  });
-  const topMotivo = Object.entries(byMotivo).sort((a,b)=>b[1]-a[1])[0];
-  kpiEl.innerHTML = `
-    <div class="detail-kpi"><div class="detail-kpi-label">Total de Insucessos</div><div class="detail-kpi-value" style="color:var(--danger)">${_insFiltered.length.toLocaleString('pt-BR')}</div></div>
-    <div class="detail-kpi"><div class="detail-kpi-label">Pacotes Únicos</div><div class="detail-kpi-value">${new Set(_insFiltered.map(r=>r['Id_Envio']||r['id_envio'])).size.toLocaleString('pt-BR')}</div></div>
-    <div class="detail-kpi"><div class="detail-kpi-label">Transportadoras</div><div class="detail-kpi-value">${new Set(_insFiltered.map(r=>r['Transportadora'])).size}</div></div>
-    <div class="detail-kpi"><div class="detail-kpi-label">Maior Causa</div><div class="detail-kpi-value" style="font-size:13px;color:var(--danger)">${topMotivo?`${topMotivo[0]} (${topMotivo[1]})`:'—'}</div></div>
-  `;
-
-  // Contador
-  document.getElementById('insDetalheCount').textContent = `${_insFiltered.length.toLocaleString('pt-BR')} registros`;
-
-  // Gráfico
-  const byMotivoSorted = Object.entries(byMotivo).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  const ctx = document.getElementById('chartInsDetalhe')?.getContext('2d');
-  if (ctx) {
-    if (_insChartInst) _insChartInst.destroy();
-    _insChartInst = new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: byMotivoSorted.map(([k])=>k),
-        datasets: [{ data: byMotivoSorted.map(([,v])=>v), backgroundColor: '#e53935', borderRadius: 5 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-      }
-    });
-  }
-
-  // Tabela
-  const tbody = document.getElementById('tblInsDetalheBody');
-  if (!tbody) return;
-  tbody.innerHTML = _insFiltered.slice(0, 500).map((r, i) => `<tr>
-    <td>${i+1}</td>
-    <td><span class="copy-id" onclick="copyText('${r['Id_Envio']||r['id_envio']||''}')" title="Copiar">${r['Id_Envio']||r['id_envio']||'—'}</span></td>
-    <td>${r['Data_final']||'—'}</td>
-    <td>${r['Transportadora']||'—'}</td>
-    <td>${r['Cod_Motorista']||'—'}</td>
-    <td><span class="copy-id" onclick="copyText('${r['SHP_LG_ROUTE_ID']||''}')" title="Copiar">${r['SHP_LG_ROUTE_ID']||'—'}</span></td>
-    <td><span class="pill bad" style="font-size:10px">${r['Sub_status']||r['sub_status']||'—'}</span></td>
-    <td style="font-size:11px;color:var(--text-muted)">${r['SHP_LG_SHIPMENT_SUB_STATUS']||'—'}</td>
-  </tr>`).join('');
-
-  if (_insFiltered.length > 500) {
-    tbody.innerHTML += `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);font-size:11px;padding:10px">Exibindo 500 de ${_insFiltered.length.toLocaleString('pt-BR')} registros. Use os filtros para refinar.</td></tr>`;
-  }
-}
-
-function copiarInsDetalhe() {
-  const linhas = _insFiltered.map(r =>
-    `${r['Id_Envio']||''}\t${r['Data_final']||''}\t${r['Transportadora']||''}\t${r['Cod_Motorista']||''}\t${r['SHP_LG_ROUTE_ID']||''}\t${r['Sub_status']||''}`
-  );
-  copyText(['ID Envio\tData\tTransportadora\tMotorista\tRota\tMotivo', ...linhas].join('\n'));
-  showToast('Lista copiada!');
-}
 
 showWelcome();
 setupSupportFab();
