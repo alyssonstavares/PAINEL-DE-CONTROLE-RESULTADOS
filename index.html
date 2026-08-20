@@ -867,6 +867,16 @@ table.detail tr:hover td { background: var(--surface-1); }
         <div class="detail-chart-wrap" style="height:400px"><canvas id="detChartInsTipo"></canvas></div>
         </div>
       </div>
+      <div class="detail-card" id="cardDSInsCluster" style="display:none">
+        <div class="detail-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Insucessos por Cluster</span>
+          <button class="chart-btn" id="minBtn_detChartInsCluster" onclick="toggleCardMin('body_detChartInsCluster','minBtn_detChartInsCluster')" title="Minimizar/expandir">▾ Minimizar</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin:2px 0 8px" id="detChartInsClusterSub">Respeita o filtro de Motivo de Insucesso acima. Só clusters com pelo menos 30 rotas no recorte, pra não gerar ruído estatístico.</div>
+        <div id="body_detChartInsCluster">
+        <div class="detail-chart-wrap" style="height:400px"><canvas id="detChartInsCluster"></canvas></div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -877,6 +887,11 @@ table.detail tr:hover td { background: var(--surface-1); }
         <button class="wa-btn" onclick="gerarRelatorio('ORHC')"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.122 1.532 5.855L.057 23.882l6.186-1.622A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.818 9.818 0 01-5.006-1.373l-.358-.214-3.724.976.997-3.622-.235-.373A9.818 9.818 0 1112 21.818z"/></svg>Gerar relatório</button>
       </div>
       <div class="detail-kpi-row" id="detKpiORHC"></div>
+      <div class="detail-card" id="cardORHCParadas" style="display:none">
+        <div class="detail-card-title">ORHC % por faixa de Qtde. de Paradas</div>
+        <div style="font-size:11px;color:var(--text-muted);margin:2px 0 8px" id="detChartORHCParadasSub"></div>
+        <div class="detail-chart-wrap"><canvas id="detChartORHCParadas"></canvas></div>
+      </div>
       <div class="detail-grid-2">
         <div class="detail-card">
           <div class="detail-card-title">ORHC % por dia</div>
@@ -885,6 +900,16 @@ table.detail tr:hover td { background: var(--surface-1); }
         <div class="detail-card">
           <div class="detail-card-title">ORHC % por MLP — Ranking</div>
           <div class="detail-chart-wrap"><canvas id="detChartORHCMlp"></canvas></div>
+        </div>
+      </div>
+      <div class="detail-card" id="cardORHCCluster" style="display:none">
+        <div class="detail-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>ORHC % por Cluster</span>
+          <button class="chart-btn" id="minBtn_detChartORHCCluster" onclick="toggleCardMin('body_detChartORHCCluster','minBtn_detChartORHCCluster')" title="Minimizar/expandir">▾ Minimizar</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin:2px 0 8px" id="detChartORHCClusterSub"></div>
+        <div id="body_detChartORHCCluster">
+        <div class="detail-chart-wrap" style="height:400px"><canvas id="detChartORHCCluster"></canvas></div>
         </div>
       </div>
       <div class="detail-card">
@@ -900,11 +925,35 @@ table.detail tr:hover td { background: var(--surface-1); }
               <th onclick="sortDtbl('detTblORHC',1)">MLP / Carrier</th>
               <th onclick="sortDtbl('detTblORHC',2)">Rotas</th>
               <th onclick="sortDtbl('detTblORHC',3)">Rotas OK</th>
-              <th onclick="sortDtbl('detTblORHC',4)">ORHC %</th>
-              <th onclick="sortDtbl('detTblORHC',5)">Gap Meta</th>
-              <th onclick="sortDtbl('detTblORHC',6)">Status</th>
+              <th onclick="sortDtbl('detTblORHC',4)" id="thORHCParadas" style="display:none">Paradas médias</th>
+              <th onclick="sortDtbl('detTblORHC',5)">ORHC %</th>
+              <th onclick="sortDtbl('detTblORHC',6)">Gap Meta</th>
+              <th onclick="sortDtbl('detTblORHC',7)">Status</th>
             </tr></thead>
             <tbody id="detTblORHCBody"></tbody>
+          </table>
+        </div>
+        </div>
+      </div>
+      <div class="detail-card" id="cardORHCClusterTbl" style="display:none">
+        <div class="detail-card-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Ofensores por Cluster</span>
+          <button class="chart-btn" id="minBtn_detTblORHCCluster" onclick="toggleCardMin('body_detTblORHCCluster','minBtn_detTblORHCCluster')" title="Minimizar/expandir">▾ Minimizar</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin:2px 0 8px">Coluna "Paradas médias" cruzada direto na tabela. Nem todo cluster ruim tem muitas paradas — por isso os dois números ficam lado a lado, sem assumir uma causa única.</div>
+        <div id="body_detTblORHCCluster">
+        <div class="detail-table-wrap">
+          <table class="dtbl" id="detTblORHCCluster">
+            <thead><tr>
+              <th onclick="sortDtbl('detTblORHCCluster',0)">#</th>
+              <th onclick="sortDtbl('detTblORHCCluster',1)">Cluster</th>
+              <th onclick="sortDtbl('detTblORHCCluster',2)">Rotas</th>
+              <th onclick="sortDtbl('detTblORHCCluster',3)">Paradas médias</th>
+              <th onclick="sortDtbl('detTblORHCCluster',4)">ORHC %</th>
+              <th onclick="sortDtbl('detTblORHCCluster',5)">Gap Meta</th>
+              <th onclick="sortDtbl('detTblORHCCluster',6)">Status</th>
+            </tr></thead>
+            <tbody id="detTblORHCClusterBody"></tbody>
           </table>
         </div>
         </div>
@@ -948,12 +997,14 @@ table.detail tr:hover td { background: var(--surface-1); }
               <th onclick="sortDtbl('detTblORHCFail',2)">MLP</th>
               <th onclick="sortDtbl('detTblORHCFail',3)">Placa</th>
               <th onclick="sortDtbl('detTblORHCFail',4)">Base</th>
-              <th onclick="sortDtbl('detTblORHCFail',5)">Data</th>
-              <th onclick="sortDtbl('detTblORHCFail',6)">ORH (h)</th>
-              <th onclick="sortDtbl('detTblORHCFail',7)" title="Tempo do início da rota até a primeira parada de entrega">Stem Out (h)</th>
-              <th onclick="sortDtbl('detTblORHCFail',8)">Despachados</th>
-              <th onclick="sortDtbl('detTblORHCFail',9)">Entregues</th>
-              <th onclick="sortDtbl('detTblORHCFail',10)">Insucessos</th>
+              <th onclick="sortDtbl('detTblORHCFail',5)">Cluster</th>
+              <th onclick="sortDtbl('detTblORHCFail',6)">Data</th>
+              <th onclick="sortDtbl('detTblORHCFail',7)">ORH (h)</th>
+              <th onclick="sortDtbl('detTblORHCFail',8)" title="Tempo do início da rota até a primeira parada de entrega">Stem Out (h)</th>
+              <th onclick="sortDtbl('detTblORHCFail',9)" id="thORHCFailParadas" style="display:none">Paradas</th>
+              <th onclick="sortDtbl('detTblORHCFail',10)">Despachados</th>
+              <th onclick="sortDtbl('detTblORHCFail',11)">Entregues</th>
+              <th onclick="sortDtbl('detTblORHCFail',12)">Insucessos</th>
             </tr></thead>
             <tbody id="detTblORHCFailBody"></tbody>
           </table>
@@ -1683,7 +1734,7 @@ const COL = {};
    2) Cole abaixo a URL terminada em output=csv.
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
-const REMOTE_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSg-gcdpvP8aagiJ9q_5naAh63sKBZmsEcm496Yf6xUl8ZQvu5iXqsXuTe_Qeef8RW7VG871RFOdT_T/pub?gid=1727561675&single=true&output=csv'; // Sheets publicado — fallback para Vercel
+const REMOTE_CSV_URL = ''; // não usado — dados lidos via Grid SDK
 const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
 const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
@@ -1737,6 +1788,7 @@ function detectColumns(headers) {
     HORA_INICIO:     ['hora_inicio','HORA_INICIO','HORA_INICIO_ROTA','START_TIME'],
     PLACA:           ['PLATE','PLACA','PLACA_VEICULO'],
     STEM_OUT:        ['STEM_OUT','STEM_OUT_HOURS'],
+    PARADAS:         ['QTDE_PARADAS_BUYER','QTDE_PARADAS','PARADAS_BUYER','PARADAS'],
     TIPO_VEICULO:    ['TIPO_VEICULO','TIPO_VEICULO_PADRAO','Tipo_veiculo','TIPO','VEHICLE_TYPE','TIPO_DE_VEICULO'],
     ENC_DMAIS:       ['ENCERRAMENTO_D_MAIS','ENCERRAMENTO_DMAIS','DIAS_ENCERRAMENTO','ENCERR_D_MAIS','D_MAIS','ENCERRAMENTO'],
   };
@@ -1769,6 +1821,7 @@ function detectColumns(headers) {
     HORA_INICIO: h => /^hora_inicio$/i.test(h) || /^hora_in[íi]cio$/i.test(h),
     TIPO_VEICULO: h => /tipo.*veic|veic.*tipo|vehicle.*type|type.*vehicle/i.test(h),
     ENC_DMAIS: h => /d_?mais/i.test(h) || /encerr/i.test(h),
+    PARADAS: h => /parada/i.test(h),
   };
   for (const [key, test] of Object.entries(fallbacks)) {
     if (!COL[key]) {
@@ -2023,7 +2076,9 @@ function _planoAcaoAgg(rows) {
       ins:{}, driverIns:{}, driverRotas:{}, zeroRoutes:[],
       overrunDespSum:0, overrunCount:0, overrunStemSum:0, overrunStemCount:0, overrunInsSum:0,
       overrunClusters:{}, overrunTipos:{}, overrunRoutes:[],
+      overrunParadasSum:0, overrunParadasCount:0,
       compliantDespSum:0, compliantCount:0,
+      compliantParadasSum:0, compliantParadasCount:0,
     };
     const desp = n(r[COL.DESPACHADOS]), entr = n(r[COL.ENTREGUES]);
     o.desp += desp; o.entr += entr;
@@ -2034,9 +2089,11 @@ function _planoAcaoAgg(rows) {
     const isZero = desp > 0 && entr === 0;
     if (orhcVal !== '' && orhcVal !== undefined) {
       o.orhcTotal++;
+      const paradasVal = COL.PARADAS ? n(r[COL.PARADAS]) : 0;
       if (n(orhcVal) === 1) {
         o.orhcOK++;
         o.compliantDespSum += desp; o.compliantCount++;
+        if (paradasVal > 0) { o.compliantParadasSum += paradasVal; o.compliantParadasCount++; }
       } else {
         // rota estourou o prazo contratado — coleta os sinais pra montar o diagnóstico/ação
         const soVal2 = COL.STEM_OUT ? n(r[COL.STEM_OUT]) : 0;
@@ -2045,12 +2102,13 @@ function _planoAcaoAgg(rows) {
         const tipoV = COL.TIPO_VEICULO ? ((r[COL.TIPO_VEICULO]||'N/D').trim() || 'N/D') : null;
         o.overrunDespSum += desp; o.overrunCount++; o.overrunInsSum += insR;
         if (soVal2 > 0) { o.overrunStemSum += soVal2; o.overrunStemCount++; }
+        if (paradasVal > 0) { o.overrunParadasSum += paradasVal; o.overrunParadasCount++; }
         if (cluster) o.overrunClusters[cluster] = (o.overrunClusters[cluster]||0) + 1;
         if (tipoV)   o.overrunTipos[tipoV]     = (o.overrunTipos[tipoV]||0) + 1;
         o.overrunRoutes.push({
           id: ((COL.ROUTE_ID && r[COL.ROUTE_ID]) || r['SHP_LG_ROUTE_ID'] || r['ID_ROTA'] || '').toString().trim() || '—',
           drv: drvOf(r) || '—', data: (r[COL.DATA]||'').trim() || '—', base: (r[COL.BASE]||'').trim() || '—',
-          desp, stemOut: soVal2>0?soVal2:null, cluster: cluster||'—', tipo: tipoV||'—', ins: insR, amb: isAmbulancia(r),
+          desp, stemOut: soVal2>0?soVal2:null, paradas: paradasVal>0?paradasVal:null, cluster: cluster||'—', tipo: tipoV||'—', ins: insR, amb: isAmbulancia(r),
         });
       }
     }
@@ -2127,9 +2185,21 @@ function _planoAcaoBuildRows(byC) {
         : pctPacotesAMais > 5  ? 'diferença pequena — pode ajudar um pouco, mas não parece ser a causa principal'
         : 'praticamente igual — o volume de pacotes não parece ser o problema aqui, a causa do atraso é outra';
 
+      // Paradas: mesma lógica do pacotes — compara média de quem estourou vs quem cumpriu o prazo.
+      // Correlação confirmada na base: rotas com 30+ paradas caem de ~92% pra ~67-70% de ORHC.
+      const paradasOverrunAvg   = o.overrunParadasCount>0   ? o.overrunParadasSum/o.overrunParadasCount     : null;
+      const paradasCompliantAvg = o.compliantParadasCount>0 ? o.compliantParadasSum/o.compliantParadasCount : null;
+      const pctParadasAMais = (paradasOverrunAvg!==null && paradasCompliantAvg!==null && paradasCompliantAvg>0)
+        ? (paradasOverrunAvg-paradasCompliantAvg)/paradasCompliantAvg*100 : null;
+      const paradasInterpret = pctParadasAMais===null ? ''
+        : pctParadasAMais > 15 ? 'diferença relevante — a quantidade de paradas provavelmente contribui pro atraso'
+        : pctParadasAMais > 5  ? 'diferença pequena — pode ajudar um pouco, mas não parece ser a causa principal'
+        : 'praticamente igual — a quantidade de paradas não parece ser o problema aqui, a causa do atraso é outra';
+
       // ação sugerida, montada a partir dos sinais coletados
       const acoes = [];
       if (pctPacotesAMais !== null && pctPacotesAMais > 15) acoes.push(`reduzir a carga de pacotes por rota nesse perfil (rotas que estouram têm em média ${pctPacotesAMais.toFixed(0)}% mais pacotes que as dentro do prazo)`);
+      if (pctParadasAMais !== null && pctParadasAMais > 15) acoes.push(`reduzir a quantidade de paradas por rota nesse perfil (rotas que estouram têm em média ${pctParadasAMais.toFixed(0)}% mais paradas que as dentro do prazo)`);
       if (stemOverrun !== null && stemOverrun > 1.5) acoes.push(`revisar o Stem Out (${stemOverrun.toFixed(2)}h até a 1ª parada) — motorista está demorando muito pra começar a rota`);
       if (topCluster && o.overrunCount>0 && topCluster[1]/o.overrunCount > 0.3) acoes.push(`focar roteirização no cluster ${topCluster[0]} (concentra ${(topCluster[1]/o.overrunCount*100).toFixed(0)}% dos estouros)`);
       if (topTipo && o.overrunCount>0 && topTipo[1]/o.overrunCount > 0.4) acoes.push(`avaliar se o modal "${topTipo[0]}" é adequado pro volume dessas rotas (${(topTipo[1]/o.overrunCount*100).toFixed(0)}% dos estouros usam esse veículo)`);
@@ -2139,7 +2209,9 @@ function _planoAcaoBuildRows(byC) {
       _planoAcaoDrillStore.push({
         mlp, type: 'ORHC',
         routes: o.overrunRoutes.sort((a,b) => (b.desp - b.ins) - (a.desp - a.ins)),
-        stats: { stemOverrun, despOverrunAvg, despCompliantAvg, pctPacotesAMais, pacotesInterpret, insOverrunRate, topCluster, topTipo, overrunCount: o.overrunCount },
+        stats: { stemOverrun, despOverrunAvg, despCompliantAvg, pctPacotesAMais, pacotesInterpret,
+                 paradasOverrunAvg, paradasCompliantAvg, pctParadasAMais, paradasInterpret,
+                 insOverrunRate, topCluster, topTipo, overrunCount: o.overrunCount },
       });
       const drillIdx = _planoAcaoDrillStore.length - 1;
       diags.push(`<strong>ORHC baixo:</strong> ${(100-orhc).toFixed(0)}% das rotas estouraram o prazo contratado (${o.overrunCount.toLocaleString('pt-BR')} rotas) — não é sobre entrega, é sobre tempo de rota.`
@@ -2148,6 +2220,7 @@ function _planoAcaoBuildRows(byC) {
         + `${topCluster?` Cluster mais afetado: <strong>${topCluster[0]}</strong> (${topCluster[1]} rotas).`:''}`
         + `${topTipo?` Veículo mais afetado: <strong>${topTipo[0]}</strong> (${topTipo[1]} rotas).`:''}`
         + `${pctPacotesAMais!==null?` As rotas que estouraram tiveram em média <strong>${despOverrunAvg.toFixed(0)} pacotes</strong> despachados, contra <strong>${despCompliantAvg.toFixed(0)}</strong> nas que ficaram dentro do prazo (${pctPacotesAMais>0?'+':''}${pctPacotesAMais.toFixed(0)}%) — ${pacotesInterpret}.`:''}`
+        + `${pctParadasAMais!==null?` Paradas médias: <strong>${paradasOverrunAvg.toFixed(1)}</strong> nas que estouraram, contra <strong>${paradasCompliantAvg.toFixed(1)}</strong> nas que cumpriram (${pctParadasAMais>0?'+':''}${pctParadasAMais.toFixed(0)}%) — ${paradasInterpret}.`:''}`
         + `${acaoTxt?' '+acaoTxt:''}`
         + ` · <a href="javascript:void(0)" onclick="showPlanoAcaoORHCDetail(${drillIdx})" style="color:var(--danger-text);text-decoration:underline;font-weight:700">Ver rotas e plano de ação →</a>`);
     } else if (foraORHC) {
@@ -4538,16 +4611,130 @@ function _aggPorCluster(filtered) {
     const rid = COL.ROUTE_ID ? (r[COL.ROUTE_ID]||'').toString().trim() : '';
     if (rid) { if (seenR.has(rid)) return; seenR.add(rid); }
     const cl = (r[COL.CLUSTER]||'N/D').trim() || 'N/D';
-    const o = map.get(cl) || { desp:0, entr:0, ins:0, horasSum:0, horasCount:0, orhcOK:0, orhcTotal:0, rotas:0 };
+    const o = map.get(cl) || { desp:0, entr:0, ins:0, horasSum:0, horasCount:0, orhcOK:0, orhcTotal:0, rotas:0, paradasSum:0, paradasCount:0 };
     const desp = n(r[COL.DESPACHADOS]), entr = n(r[COL.ENTREGUES]);
     o.desp += desp; o.entr += entr; o.rotas++;
     o.ins += Math.max(0, desp - entr);
     if (COL.ORH_HOURS) { const h = n(r[COL.ORH_HOURS]); if (h > 0) { o.horasSum += h; o.horasCount++; } }
     if (COL.ORHC && r[COL.ORHC] !== '' && r[COL.ORHC] !== undefined) { o.orhcTotal++; if (n(r[COL.ORHC]) === 1) o.orhcOK++; }
+    if (COL.PARADAS) { const pv = n(r[COL.PARADAS]); if (pv > 0) { o.paradasSum += pv; o.paradasCount++; } }
     map.set(cl, o);
   });
   return map;
 }
+
+// ── ORHC % por faixa de Qtde. de Paradas — mostra a curva geral (independe de cluster/MLP):
+// quanto mais paradas a rota tem, menor a chance de bater o prazo contratado. Faixas fixas
+// (não adaptativas) pra manter comparabilidade entre recortes de filtro diferentes.
+const PARADAS_BUCKETS = [
+  { label:'<20',    min:0,   max:20   },
+  { label:'20-29',  min:20,  max:30   },
+  { label:'30-39',  min:30,  max:40   },
+  { label:'40-49',  min:40,  max:50   },
+  { label:'50-59',  min:50,  max:60   },
+  { label:'60-79',  min:60,  max:80   },
+  { label:'80+',    min:80,  max:Infinity },
+];
+function renderParadasBucketChart(canvasId, filtered) {
+  const canvas = document.getElementById(canvasId);
+  const card = document.getElementById('cardORHCParadas');
+  if (!canvas) return;
+  if (!COL.PARADAS || !COL.ORHC) { if (card) card.style.display = 'none'; return; }
+  if (card) card.style.display = '';
+  const seenR = new Set();
+  const buckets = PARADAS_BUCKETS.map(b => ({ ...b, rotas:0, orhcOK:0, orhcTotal:0 }));
+  filtered.forEach(r => {
+    const rid = COL.ROUTE_ID ? (r[COL.ROUTE_ID]||'').toString().trim() : '';
+    if (rid) { if (seenR.has(rid)) return; seenR.add(rid); }
+    const p = n(r[COL.PARADAS]);
+    const b = buckets.find(bk => p >= bk.min && p < bk.max);
+    if (!b) return;
+    b.rotas++;
+    if (COL.ORHC && r[COL.ORHC] !== '' && r[COL.ORHC] !== undefined) { b.orhcTotal++; if (n(r[COL.ORHC]) === 1) b.orhcOK++; }
+  });
+  const usable = buckets.filter(b => b.rotas > 0);
+  const subEl = document.getElementById(canvasId + 'Sub');
+  if (subEl) subEl.textContent = usable.length
+    ? 'Cada faixa mostra o ORHC % das rotas com aquela quantidade de paradas — independe de cluster ou transportadora, é o efeito puro do volume de paradas na rota.'
+    : 'Sem dados de paradas suficientes no recorte atual.';
+  destroyDetChart(canvasId);
+  if (!usable.length) return;
+  detCharts[canvasId] = new Chart(canvas, {
+    data: {
+      labels: usable.map(b => b.label + ' paradas'),
+      datasets: [
+        { type:'bar', label:'ORHC %', data: usable.map(b => b.orhcTotal>0 ? +pct2(b.orhcOK,b.orhcTotal).toFixed(2) : 0), backgroundColor: usable.map(b => (b.orhcTotal>0?pct2(b.orhcOK,b.orhcTotal):0)>=85?'#2a78d6':'#fab219'), borderRadius:4, borderSkipped:false, yAxisID:'y', order:2 },
+        { type:'line', label:'Rotas (volume)', data: usable.map(b => b.rotas), borderColor:'#898781', backgroundColor:'transparent', borderDash:[4,3], borderWidth:2, pointRadius:3, yAxisID:'y1', order:1 }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'bottom', labels:{font:{size:10}, boxWidth:12} },
+        datalabels:{ display: ctx => ctx.datasetIndex===0, anchor:'end', align:'end', formatter:v=>fmtPt(v)+'%', color:'#2a2926', font:{size:9,weight:'700'} }
+      },
+      scales:{
+        y:{ position:'left', min:0, max:100, title:{display:true,text:'ORHC %'}, ticks:{callback:v=>v+'%',font:{size:10}}, grid:{color:'rgba(128,128,128,0.12)'} },
+        y1:{ position:'right', min:0, title:{display:true,text:'Rotas'}, ticks:{font:{size:10}}, grid:{display:false} },
+        x:{ ticks:{color:'#45433f',font:{size:10}}, grid:{display:false} }
+      }
+    }
+  });
+}
+// Insucessos por Cluster, respeitando o filtro de Motivo (msState.Motivo) da aba DS por Insucesso.
+// Clusters costumam ter dezenas/centenas de valores distintos, então aplica um mínimo de rotas
+// (evita cluster com 2 rotas e 1 insucesso aparecendo como "100% de insucesso") e mostra só os piores.
+const CLUSTER_INS_MIN_ROTAS = 30;
+function renderClusterInsChart(canvasId, filtered, topN) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas || !COL.CLUSTER) return;
+  topN = topN || 15;
+  const selKeys = msState.Motivo.size ? INS_COLS.filter(c => msState.Motivo.has(c.label)).map(c => c.key) : [];
+  const map = new Map(); // cluster -> { ins, rotas }
+  const seenR = new Set();
+  filtered.forEach(r => {
+    const rid = COL.ROUTE_ID ? (r[COL.ROUTE_ID]||'').toString().trim() : '';
+    if (rid) { if (seenR.has(rid)) return; seenR.add(rid); }
+    const cl = (r[COL.CLUSTER]||'N/D').trim() || 'N/D';
+    const ins = selKeys.length ? selKeys.reduce((s,k) => s + n(r[k]), 0) : Math.max(0, n(r[COL.DESPACHADOS]) - n(r[COL.ENTREGUES]));
+    const o = map.get(cl) || { ins:0, rotas:0 };
+    o.ins += ins; o.rotas++;
+    map.set(cl, o);
+  });
+  let entries = [...map.entries()].filter(([,o]) => o.rotas >= CLUSTER_INS_MIN_ROTAS && o.ins > 0).sort((a,b) => b[1].ins - a[1].ins);
+  const totalQualifying = entries.length;
+  entries = entries.slice(0, topN);
+  const subEl = document.getElementById(canvasId + 'Sub');
+  if (subEl) subEl.textContent = totalQualifying
+    ? `Mostrando os ${Math.min(topN,totalQualifying)} piores clusters com pelo menos ${CLUSTER_INS_MIN_ROTAS} rotas (${totalQualifying} qualificam) — mais insucessos primeiro. Respeita o filtro de Motivo acima.`
+    : `Nenhum cluster com ${CLUSTER_INS_MIN_ROTAS}+ rotas no recorte atual.`;
+  if (_tipoCharts[canvasId]) { _tipoCharts[canvasId].destroy(); delete _tipoCharts[canvasId]; }
+  if (!entries.length) { const ctx = canvas.getContext('2d'); ctx.clearRect(0,0,canvas.width,canvas.height); return; }
+  const wrap = canvas.closest('.detail-chart-wrap');
+  if (wrap) wrap.style.height = Math.max(300, entries.length * 30) + 'px';
+  const labels = entries.map(([k]) => k);
+  const data   = entries.map(([,o]) => o.ins);
+  _tipoCharts[canvasId] = new Chart(canvas, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Insucessos', data, backgroundColor: data.map((v,i) => i < 3 ? '#d03b3b' : '#e8836e'), borderRadius: 4, borderSkipped: false }] },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      onClick: (evt, els, chart) => { if (!els.length) return; showIdCopy(String(chart.data.labels[els[0].index])); },
+      onHover: (evt, els) => { if (evt.native && evt.native.target) evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.parsed.x.toLocaleString('pt-BR')} insucessos` } },
+        datalabels: { anchor:'end', align:'end', formatter: v => v.toLocaleString('pt-BR'), color:'#2a2926', font:{size:9,weight:'700'}, offset:4, clip:false }
+      },
+      layout: { padding: { right: 60, top: 4, bottom: 4 } },
+      scales: {
+        x: { min:0, ticks: { color:'#45433f', font:{size:10} }, grid: { color:'rgba(128,128,128,0.12)' } },
+        y: { ticks: { color:'#45433f', font:{size:10} }, grid: { display:false } }
+      }
+    }
+  });
+}
+
 function renderClusterChart(canvasId, metricKey, filtered, topN) {
   const canvas = document.getElementById(canvasId);
   if (!canvas || !COL.CLUSTER) return;
@@ -4710,13 +4897,14 @@ function buildDetailAgg(filtered) {
     });
 
     if (!byCarrier[c]) {
-      byCarrier[c] = { desp:0, entr:0, dpphSum:0, dpphCnt:0, orhcOK:0, orhcTotal:0, uv:0, pac:0, claims:0, rotas:0, ins:{} };
+      byCarrier[c] = { desp:0, entr:0, dpphSum:0, dpphCnt:0, orhcOK:0, orhcTotal:0, uv:0, pac:0, claims:0, rotas:0, ins:{}, paradasSum:0, paradasCount:0 };
       dpphRoutesByCarrier[c] = new Map();
       claimSetsByCarrier[c]  = new Set();
     }
     byCarrier[c].desp += desp; byCarrier[c].entr += entr; byCarrier[c].rotas++;
     if (orhcV !== '' && orhcV !== undefined) { byCarrier[c].orhcTotal++; if(n(orhcV)===1) byCarrier[c].orhcOK++; }
     byCarrier[c].uv += uvV; byCarrier[c].pac += pacV;
+    if (COL.PARADAS) { const pv = n(r[COL.PARADAS]); if (pv > 0) { byCarrier[c].paradasSum += pv; byCarrier[c].paradasCount++; } }
     INS_COLS.forEach(col => { byCarrier[c].ins[col.key] = (byCarrier[c].ins[col.key]||0) + n(r[col.key]); });
     if (rid && !dpphRoutesByCarrier[c].has(rid)) {
       dpphRoutesByCarrier[c].set(rid, { entr: n(r[COL.ENTREGUES]), hours: orhHours });
@@ -5153,6 +5341,9 @@ function renderDetailDSIns() {
   const cardTipo = document.getElementById('cardDSInsTipoVeiculo');
   if (cardTipo) cardTipo.style.display = COL.TIPO_VEICULO ? '' : 'none';
   renderTipoInsChart('detChartInsTipo', filtered);
+  const cardCluster = document.getElementById('cardDSInsCluster');
+  if (cardCluster) cardCluster.style.display = COL.CLUSTER ? '' : 'none';
+  renderClusterInsChart('detChartInsCluster', filtered);
   const { byDate, byCarrier, dates, all } = buildDetailAgg(filtered);
   const ins  = all.desp - all.entr;
   const ds   = all.desp > 0 ? pct2(all.entr, all.desp) : 0;
@@ -5328,6 +5519,10 @@ function renderDetailORHC() {
   const cardTipo = document.getElementById('cardORHCTipoVeiculo');
   if (cardTipo) cardTipo.style.display = COL.TIPO_VEICULO ? '' : 'none';
   renderTipoVeiculoChart('detChartORHCTipo', 'ORHC', filtered);
+  renderParadasBucketChart('detChartORHCParadas', filtered);
+  const cardCluster = document.getElementById('cardORHCCluster');
+  if (cardCluster) cardCluster.style.display = COL.CLUSTER ? '' : 'none';
+  renderClusterChart('detChartORHCCluster', 'ORHC', filtered);
   const { byDate, byCarrier, dates, all } = buildDetailAgg(filtered);
   const orhc = all.orhcTotal > 0 ? pct2(all.orhcOK, all.orhcTotal) : 0;
   const alertEl = document.getElementById('detAlertORHC');
@@ -5368,11 +5563,18 @@ function renderDetailORHC() {
       scales:{ y:{ min:0, ticks:{callback:v=>v+'%',font:{size:10}} }, x:{ ticks:{font:{size:9},maxRotation:45,autoSkip:false} } } }
   });
 
+  const thParadas = document.getElementById('thORHCParadas');
+  if (thParadas) thParadas.style.display = COL.PARADAS ? '' : 'none';
   const tbody = document.getElementById('detTblORHCBody'); tbody.innerHTML = '';
   const sortedC = [...carriers].sort((a,b) => pct2(byCarrier[a].orhcOK,byCarrier[a].orhcTotal) - pct2(byCarrier[b].orhcOK,byCarrier[b].orhcTotal));
   sortedC.forEach((c,i) => {
     const d = byCarrier[c]; const v = d.orhcTotal>0 ? pct2(d.orhcOK,d.orhcTotal) : 0; const gap = (v-85).toFixed(2);
+    const paradasMedia = d.paradasCount>0 ? d.paradasSum/d.paradasCount : null;
+    const paradasCell = COL.PARADAS
+      ? `<td>${paradasMedia!==null?`<span class="pill ${paradasMedia>=50?'bad':'good'}">${fmtPt(paradasMedia,1)}</span>`:'—'}</td>`
+      : '';
     tbody.innerHTML += `<tr><td>${rankBadge(i)}</td><td><strong>${c}</strong></td><td>${d.rotas.toLocaleString('pt-BR')}</td><td>${d.orhcOK.toLocaleString('pt-BR')}</td>
+      ${paradasCell}
       <td><span class="pill ${v>=85?'good':'bad'}">${fmtPt(v)}%</span></td>
       <td style="color:${v>=85?'var(--success)':'var(--danger)'};font-weight:600">${v>=85?'+':''}${gap} p.p.</td>
       <td>${detBadge(v, v>=85)}</td></tr>`;
@@ -5406,6 +5608,31 @@ function renderDetailORHC() {
     }).join('');
   }
 
+  // ── Ofensores por Cluster, com Paradas médias cruzadas na mesma linha ──
+  const cardClusterTbl = document.getElementById('cardORHCClusterTbl');
+  if (cardClusterTbl) cardClusterTbl.style.display = COL.CLUSTER ? '' : 'none';
+  const tbodyCl = document.getElementById('detTblORHCClusterBody');
+  if (tbodyCl && COL.CLUSTER) {
+    const clMap = _aggPorCluster(filtered);
+    const clRows = [...clMap.entries()]
+      .filter(([,o]) => o.orhcTotal > 0)
+      .map(([cl,o]) => ({
+        cluster: cl, rotas: o.rotas,
+        v: pct2(o.orhcOK, o.orhcTotal),
+        paradasMedia: o.paradasCount>0 ? o.paradasSum/o.paradasCount : null,
+      }))
+      .sort((a,b) => a.v - b.v);
+    tbodyCl.innerHTML = clRows.map((o,i) => {
+      const gap = (o.v - 85).toFixed(2);
+      const paradasBad = o.paradasMedia !== null && o.paradasMedia >= 50;
+      return `<tr><td>${rankBadge(i)}</td><td><strong>${o.cluster}</strong></td><td>${o.rotas.toLocaleString('pt-BR')}</td>
+        <td>${o.paradasMedia!==null?`<span class="pill ${paradasBad?'bad':'good'}">${fmtPt(o.paradasMedia,1)}</span>`:'—'}</td>
+        <td><span class="pill ${o.v>=85?'good':'bad'}">${fmtPt(o.v)}%</span></td>
+        <td style="color:${o.v>=85?'var(--success)':'var(--danger)'};font-weight:600">${o.v>=85?'+':''}${gap} p.p.</td>
+        <td>${detBadge(o.v, o.v>=85)}</td></tr>`;
+    }).join('');
+  }
+
   const tbody2 = document.getElementById('detTblORHCDiaBody'); tbody2.innerHTML = '';
   dates.forEach(d => {
     const v2 = byDate[d]; const oV = v2.orhcTotal>0 ? pct2(v2.orhcOK,v2.orhcTotal) : 0;
@@ -5415,6 +5642,8 @@ function renderDetailORHC() {
       <td>${detBadge(oV, oV>=85)}</td></tr>`;
   });
   // Drivers/Rotas que não bateram o ORHC — detalhamento (ID Rota, ID Driver, tempo de rota etc.)
+  const thFailParadas = document.getElementById('thORHCFailParadas');
+  if (thFailParadas) thFailParadas.style.display = COL.PARADAS ? '' : 'none';
   const tbodyFail = document.getElementById('detTblORHCFailBody');
   if (tbodyFail) {
     const seenR = new Set();
@@ -5434,18 +5663,21 @@ function renderDetailORHC() {
         mlp: (r[COL.CARRIER]||'').trim() || '—',
         placa: (COL.PLACA ? (r[COL.PLACA]||'').trim() : '') || '—',
         base: (r[COL.BASE]||'').trim() || '—',
+        cluster: (COL.CLUSTER ? (r[COL.CLUSTER]||'').trim() : '') || '—',
         data: (r[COL.DATA]||'').trim() || '—',
         hrs,
         stemOut: COL.STEM_OUT ? n(r[COL.STEM_OUT]) : null,
+        paradas: COL.PARADAS ? n(r[COL.PARADAS]) : null,
         desp, entr, ins: Math.max(0, desp - entr), amb: isAmbulancia(r),
       });
     });
     failRows.sort((a,b) => (b.hrs ?? -1) - (a.hrs ?? -1));
     const capN = 300;
     tbodyFail.innerHTML = failRows.slice(0, capN).map(x => `<tr>
-      <td>${routeLink(x.id)}${x.amb?' <span class="pill bad" title="Rota sem ROTA_PLAN" style="padding:1px 6px">🚑</span>':''}</td><td>${x.drv}</td><td>${x.mlp}</td><td>${x.placa}</td><td>${x.base}</td><td>${x.data}</td>
+      <td>${routeLink(x.id)}${x.amb?' <span class="pill bad" title="Rota sem ROTA_PLAN" style="padding:1px 6px">🚑</span>':''}</td><td>${x.drv}</td><td>${x.mlp}</td><td>${x.placa}</td><td>${x.base}</td><td>${x.cluster}</td><td>${x.data}</td>
       <td>${x.hrs!==null ? `<span class="pill ${x.hrs>12?'bad':''}">${x.hrs.toFixed(1)}h</span>` : '—'}</td>
       <td>${x.stemOut !== null && !isNaN(x.stemOut) ? x.stemOut.toFixed(2).replace('.',',') + 'h' : '—'}</td>
+      ${COL.PARADAS ? `<td>${x.paradas!==null?`<span class="pill ${x.paradas>=50?'bad':''}">${x.paradas.toLocaleString('pt-BR')}</span>`:'—'}</td>` : ''}
       <td>${x.desp.toLocaleString('pt-BR')}</td><td>${x.entr.toLocaleString('pt-BR')}</td>
       <td>${x.ins>0?`<span class="pill bad">${x.ins.toLocaleString('pt-BR')}</span>`:'0'}</td>
     </tr>`).join('');
@@ -6563,7 +6795,8 @@ function showPlanoAcaoORHCDetail(idx) {
       +   '</div>'
       + '</div>'
       + '<div id="paOrhcStats" style="padding:12px 18px;border-bottom:0.5px solid var(--border);font-size:11.5px;line-height:1.7"></div>'
-      + '<div style="overflow:auto;flex:1"><table class="dtbl"><thead><tr><th>ID Rota</th><th>ID Driver</th><th>Data</th><th>Base</th><th>Cluster</th><th>Veículo</th><th>Despachados</th><th>Stem Out</th><th>Insucessos</th></tr></thead><tbody id="paOrhcBody"></tbody></table></div>'
+      + '<div style="font-size:11px;color:var(--text-muted);padding:0 18px 8px">📋 Detalhamento completo por rota — cada linha é uma rota que estourou o prazo, ordenada pelo maior volume (despachados − insucessos)</div>'
+      + '<div style="overflow:auto;flex:1"><table class="dtbl"><thead><tr><th>ID Rota</th><th>ID Driver</th><th>Data</th><th>Base</th><th>Cluster</th><th>Veículo</th><th id="paOrhcThParadas" style="display:none">Paradas</th><th>Despachados</th><th>Stem Out</th><th>Insucessos</th></tr></thead><tbody id="paOrhcBody"></tbody></table></div>'
       + '</div>';
     document.body.appendChild(ov);
     ov.addEventListener('click', e => { if (e.target === ov) ov.style.display = 'none'; });
@@ -6582,13 +6815,18 @@ function showPlanoAcaoORHCDetail(idx) {
     + statCard('Taxa de insucesso', s.insOverrunRate!==null ? s.insOverrunRate.toFixed(1)+'%' : null, 'Insucessos sobre despachados, só nas rotas que estouraram — pra ver se o atraso também prejudica a entrega.')
     + statCard('Pacotes por rota', (s.despOverrunAvg!==null && s.despCompliantAvg!==null) ? `${s.despOverrunAvg.toFixed(0)} vs ${s.despCompliantAvg.toFixed(0)}` : null,
         s.pctPacotesAMais!==null ? `Estourou vs. dentro do prazo (${s.pctPacotesAMais>0?'+':''}${s.pctPacotesAMais.toFixed(0)}%). ${s.pacotesInterpret||''}.` : '')
+    + statCard('Paradas por rota', (s.paradasOverrunAvg!==null && s.paradasCompliantAvg!==null) ? `${s.paradasOverrunAvg.toFixed(1)} vs ${s.paradasCompliantAvg.toFixed(1)}` : null,
+        s.pctParadasAMais!==null ? `Estourou vs. dentro do prazo (${s.pctParadasAMais>0?'+':''}${s.pctParadasAMais.toFixed(0)}%). ${s.paradasInterpret||''}.` : '')
     + statCard('Cluster mais afetado', s.topCluster ? s.topCluster[0] : null,
         s.topCluster ? `${s.topCluster[1]} de ${s.overrunCount} rotas que estouraram são desse cluster (${(s.topCluster[1]/s.overrunCount*100).toFixed(0)}%).` : '')
     + statCard('Veículo mais afetado', s.topTipo ? s.topTipo[0] : null,
         s.topTipo ? `${s.topTipo[1]} de ${s.overrunCount} rotas que estouraram usam esse veículo (${(s.topTipo[1]/s.overrunCount*100).toFixed(0)}%).` : '')
     + `</div>`;
+  const thParadasOrhc = document.getElementById('paOrhcThParadas');
+  if (thParadasOrhc) thParadasOrhc.style.display = COL.PARADAS ? '' : 'none';
   document.getElementById('paOrhcBody').innerHTML = entry.routes.map(r => `<tr>
     <td>${routeLink(r.id)}${r.amb?' <span class="pill bad" title="Rota sem ROTA_PLAN" style="padding:1px 6px">🚑</span>':''}</td><td>${r.drv}</td><td>${r.data}</td><td>${r.base}</td><td>${r.cluster}</td><td>${r.tipo}</td>
+    ${COL.PARADAS ? `<td>${r.paradas!==null && r.paradas!==undefined ? `<span class="pill ${r.paradas>=50?'bad':''}">${r.paradas.toLocaleString('pt-BR')}</span>` : '—'}</td>` : ''}
     <td>${r.desp.toLocaleString('pt-BR')}</td>
     <td>${r.stemOut!==null ? r.stemOut.toFixed(2)+'h' : '—'}</td>
     <td>${r.ins>0 ? `<span style="color:var(--danger);font-weight:700">${r.ins}</span>` : '0'}</td>
@@ -6597,10 +6835,11 @@ function showPlanoAcaoORHCDetail(idx) {
     const lines = [`🔴 ${entry.mlp} — ${entry.routes.length} rota(s) fora do prazo contratado`, '━━━━━━━━━━━━━━━━━━━'];
     if (s.stemOverrun!==null) lines.push(`Stem Out médio: ${s.stemOverrun.toFixed(2)}h`);
     if (s.insOverrunRate!==null) lines.push(`Taxa de insucesso: ${s.insOverrunRate.toFixed(1)}%`);
+    if (s.pctParadasAMais!==null) lines.push(`Paradas médias: ${s.paradasOverrunAvg.toFixed(1)} (estourou) vs ${s.paradasCompliantAvg.toFixed(1)} (cumpriu) — ${s.pctParadasAMais>0?'+':''}${s.pctParadasAMais.toFixed(0)}%`);
     if (s.topCluster) lines.push(`Cluster mais afetado: ${s.topCluster[0]} (${s.topCluster[1]} rotas)`);
     if (s.topTipo) lines.push(`Veículo mais afetado: ${s.topTipo[0]} (${s.topTipo[1]} rotas)`);
     lines.push('━━━━━━━━━━━━━━━━━━━');
-    entry.routes.forEach((r,i) => lines.push(`${i+1}. Rota ${r.id} · driver ${r.drv} · ${r.data} · ${r.base} · cluster ${r.cluster} · ${r.tipo}`));
+    entry.routes.forEach((r,i) => lines.push(`${i+1}. Rota ${r.id} · driver ${r.drv} · ${r.data} · ${r.base} · cluster ${r.cluster} · ${r.tipo}${r.paradas?` · ${r.paradas} paradas`:''}`));
     copyText(lines.join('\n')).then(() => showCopyToast('📋 Lista copiada'));
   };
   ov.style.display = 'flex';
@@ -7198,16 +7437,14 @@ async function carregarDadosOnline(manual = false) {
       normalized = normalizeRows(allRows);
 
     } else {
-      // ── Fallback: leitura via CSV publicado do Sheets (Vercel e uso local) ──
-      const fallbackUrl = REMOTE_CSV_URL.trim()
-        ? REMOTE_CSV_URL.trim() + '&_t=' + Date.now()
-        : `https://docs.google.com/spreadsheets/d/${GRID_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GRID_SHEET_TAB)}&_t=${Date.now()}`;
+      // ── Fallback: leitura via CSV publicado (limitado a 50k pelo Google) ──
+      const fallbackUrl = `https://docs.google.com/spreadsheets/d/${GRID_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(GRID_SHEET_TAB)}&_t=${Date.now()}`;
       const response = await fetch(fallbackUrl, { cache: 'no-store' });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const csvText = await response.text();
       const parsed = Papa.parse(csvText, {
         header: true, skipEmptyLines: 'greedy', dynamicTyping: false,
-        transformHeader: h => String(h || '').replace(/^﻿/, '').trim()
+        transformHeader: h => String(h || '').replace(/^\uFEFF/, '').trim()
       });
       normalized = normalizeRows(parsed.data);
     }
@@ -8028,8 +8265,6 @@ function showWelcome() {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && document.getElementById('welcomeBackdrop').classList.contains('open')) closeWelcome();
 });
-
-
 showWelcome();
 setupSupportFab();
 initRemoteDataSource();
