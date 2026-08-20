@@ -7548,6 +7548,16 @@ function scheduleRemoteRefresh() {
 }
 
 function initRemoteDataSource() {
+  // Se estiver aberto direto como arquivo local (file://) ou fora do Grid/Vercel publicado,
+  // a busca automática da planilha vai falhar por CORS/login — nesses casos, nem tenta:
+  // cai direto pra tela de upload manual, sem mostrar erro assustador nem travar o header.
+  const isLocalFile = location.protocol === 'file:';
+  const insideGrid = typeof Grid !== 'undefined';
+  if (isLocalFile && !insideGrid) {
+    document.getElementById('headerInfo').textContent = 'Nenhum arquivo carregado — use o upload manual abaixo';
+    return;
+  }
+
   // Inicializa leitura via Grid SDK (sem limite de linhas)
   // ou fallback CSV se estiver fora do Grid
   const button = document.getElementById('remoteRefreshBtn');
