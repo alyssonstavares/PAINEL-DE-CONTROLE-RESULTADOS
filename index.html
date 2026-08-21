@@ -1734,7 +1734,7 @@ const COL = {};
    2) Cole abaixo a URL terminada em output=csv.
    3) Deixe vazio para manter somente o upload manual.
 ══════════════════════════════════════════ */
-const REMOTE_CSV_URL = ''; // não usado — dados lidos via Grid SDK
+const REMOTE_CSV_URL = '/api/sheet-csv'; // proxy serverless da Vercel (api/sheet-csv.js) — evita o bloqueio de CORS do link direto do Google
 const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
 const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
