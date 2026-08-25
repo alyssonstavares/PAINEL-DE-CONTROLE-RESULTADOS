@@ -597,6 +597,7 @@ table.detail tr:hover td { background: var(--surface-1); }
     <button class="tab-btn" onclick="showMainTab('tabRota',this)">🗺 Por Rota</button>
     <button class="tab-btn" onclick="showMainTab('tabEncerramento',this)">⏱ Encerramento D+</button>
     <button class="tab-btn" onclick="showMainTab('tabDobra',this)">🔄 Dobra de Rotas</button>
+    <button class="tab-btn" onclick="showMainTab('tabShare',this)">🥧 Share Pacotes &amp; Rotas</button>
     <button class="tab-btn" onclick="showMainTab('tabOfensores',this)">🚨 Top Ofensores</button>
   </div>
 
@@ -1625,6 +1626,137 @@ table.detail tr:hover td { background: var(--surface-1); }
           <div style="position:relative;width:100%;height:320px"><canvas id="chartOfensor_ORH"></canvas></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ══════ TAB: SHARE DE PACOTES & ROTAS ══════ -->
+  <div id="tabShare" class="tab-section">
+    <div class="detail-content">
+
+      <!-- Barra de controles -->
+      <div class="detail-card" style="padding:14px 18px">
+        <div class="detail-filter-row" style="align-items:flex-end;gap:14px">
+          <div class="filter-group">
+            <label>Dimensão</label>
+            <select id="shareDim" onchange="setShareDim(this.value)" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:5px 10px;font-size:12px;background:var(--surface-1);color:var(--text-primary);outline:none;min-width:150px"></select>
+          </div>
+          <div class="filter-group">
+            <label>Métrica</label>
+            <div style="display:flex;gap:6px">
+              <button class="chart-btn" id="shareMetricPKG" onclick="setShareMetric('PKG')">📦 Pacotes</button>
+              <button class="chart-btn" id="shareMetricROT" onclick="setShareMetric('ROT')">🚚 Rotas</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Visão</label>
+            <div style="display:flex;gap:6px">
+              <button class="chart-btn" id="shareViewDIA" onclick="setShareView('DIA')">📅 Por dia</button>
+              <button class="chart-btn" id="shareViewSEM" onclick="setShareView('SEM')">🗓 Semana × Semana</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <label>Top N no gráfico</label>
+            <select id="shareTopN" onchange="setShareTopN(this.value)" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:5px 10px;font-size:12px;background:var(--surface-1);color:var(--text-primary);outline:none;">
+              <option value="6">6</option>
+              <option value="8">8</option>
+              <option value="10" selected>10</option>
+              <option value="15">15</option>
+              <option value="99999">Todos</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Buscar</label>
+            <input type="text" id="shareSearch" placeholder="filtrar linhas da tabela..." oninput="renderShare()" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:5px 10px;font-size:12px;background:var(--surface-1);color:var(--text-primary);outline:none;width:190px;">
+          </div>
+          <div style="margin-left:auto;display:flex;gap:6px">
+            <button class="chart-btn" onclick="copyShareTable()">📋 Copiar tabela</button>
+          </div>
+        </div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin-top:10px;line-height:1.55">
+          <strong>Share</strong> = participação de cada <span id="shareDimLabelInline">base</span> no total do período filtrado.
+          <strong>📦 Pacotes</strong> usa <em>QTDE_DESPACHADOS</em>; <strong>🚚 Rotas</strong> conta rotas únicas (deduplicadas por ROUTE_ID).
+          Todos os filtros globais do topo valem aqui. Na visão <strong>Semana × Semana</strong>, o <strong>Δ pp</strong> compara a última semana com a anterior — verde = ganhou participação, vermelho = perdeu.
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="detail-kpi-row" id="detKpiShare"></div>
+
+      <!-- Gráficos -->
+      <div class="detail-grid-2">
+        <div class="detail-card">
+          <div class="detail-card-title" id="shareChartMixTitle">Composição do mix (100%) por período</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Cada barra é um período; a altura de cada faixa é o share daquele item no dia/semana.</div>
+          <div class="detail-chart-wrap"><canvas id="detChartShareMix"></canvas></div>
+        </div>
+        <div class="detail-card">
+          <div class="detail-card-title" id="shareChartTrendTitle">Evolução do share (%)</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Linha por item do Top N — mostra quem está ganhando ou perdendo participação ao longo do tempo.</div>
+          <div class="detail-chart-wrap"><canvas id="detChartShareTrend"></canvas></div>
+        </div>
+      </div>
+
+      <div class="detail-card">
+        <div class="detail-card-title" id="shareChartVolTitle">Volume absoluto por período</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px">Barras empilhadas em valores absolutos — o total de cada período aparece no topo.</div>
+        <div class="detail-chart-wrap-tall"><canvas id="detChartShareVol"></canvas></div>
+      </div>
+
+      <!-- Tabela matriz -->
+      <div class="detail-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="detail-card-title" id="shareTblTitle" style="margin:0;border:0;padding:0">Matriz de share</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-size:11px;color:var(--text-muted)">Exibir célula como</span>
+            <button class="chart-btn" id="shareCellPCT" onclick="setShareCell('PCT')">% share</button>
+            <button class="chart-btn" id="shareCellABS" onclick="setShareCell('ABS')">Valor absoluto</button>
+            <button class="chart-btn" id="shareCellBOTH" onclick="setShareCell('BOTH')">Ambos</button>
+          </div>
+        </div>
+        <div class="detail-table-wrap" id="shareTblWrap" style="max-height:600px">
+          <table class="dtbl pivotTable" id="shareTbl">
+            <thead id="shareTblHead"></thead>
+            <tbody id="shareTblBody"></tbody>
+            <tfoot id="shareTblFoot"></tfoot>
+          </table>
+        </div>
+        <div id="shareTblCount" style="font-size:11px;color:var(--text-muted);padding:8px 0 0"></div>
+      </div>
+
+      <!-- Comparativo semana x semana detalhado -->
+      <div class="detail-card" id="shareWowCard">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <div class="detail-card-title" id="shareWowTitle" style="margin:0;border:0;padding:0">Semana × Semana — quem ganhou e quem perdeu share</div>
+          <button class="chart-btn" onclick="copyShareWow()">📋 Copiar comparativo</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:10px" id="shareWowSub"></div>
+        <div class="detail-grid-2" style="margin-bottom:14px">
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--success);margin-bottom:6px">▲ Maiores ganhos de share</div>
+            <div id="shareWowUp"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:700;color:var(--danger);margin-bottom:6px">▼ Maiores perdas de share</div>
+            <div id="shareWowDown"></div>
+          </div>
+        </div>
+        <div class="detail-table-wrap" style="max-height:520px">
+          <table class="dtbl" id="shareWowTbl">
+            <thead><tr>
+              <th onclick="sortDtbl('shareWowTbl',0)" id="shareWowTh0">Item</th>
+              <th onclick="sortDtbl('shareWowTbl',1)" id="shareWowTh1">Sem. anterior</th>
+              <th onclick="sortDtbl('shareWowTbl',2)">Share ant.</th>
+              <th onclick="sortDtbl('shareWowTbl',3)" id="shareWowTh3">Sem. atual</th>
+              <th onclick="sortDtbl('shareWowTbl',4)">Share atual</th>
+              <th onclick="sortDtbl('shareWowTbl',5)">Δ share (pp)</th>
+              <th onclick="sortDtbl('shareWowTbl',6)">Δ volume</th>
+              <th onclick="sortDtbl('shareWowTbl',7)">Δ volume %</th>
+            </tr></thead>
+            <tbody id="shareWowBody"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -2983,8 +3115,531 @@ function update() {
     if (id === 'tabEncerramento') renderEncerramento();
     if (id === 'tabDobra') renderDetailDobra();
     if (id === 'tabOfensores') renderOfensores();
+    if (id === 'tabShare') renderShare();
   }
   persistState();
+}
+
+/* ══════════════════════════════════════════
+   TAB: SHARE DE PACOTES & ROTAS
+   Participação (%) de cada dimensão — base, MLP, SVC, tipo de veículo,
+   cluster, ciclo — sobre o total do recorte filtrado, em duas visões:
+   por dia e semana × semana (com Δ pp entre as duas últimas semanas).
+══════════════════════════════════════════ */
+
+// Dimensões disponíveis; só entram no seletor as que existem na base carregada.
+const SHARE_DIMS = [
+  { key:'BASE',         label:'Base',             col:() => COL.BASE },
+  { key:'CARRIER',      label:'MLP / Carrier',    col:() => COL.CARRIER },
+  { key:'SVC',          label:'SVC',              col:() => COL.SVC },
+  { key:'TIPO_VEICULO', label:'Tipo de veículo',  col:() => COL.TIPO_VEICULO },
+  { key:'CLUSTER',      label:'Cluster',          col:() => COL.CLUSTER },
+  { key:'CICLO',        label:'Ciclo',            col:() => COL.CICLO },
+  { key:'TIPO_ROTA',    label:'Tipo de rota',     col:() => COL.TIPO_ROTA },
+  { key:'DRIVER',       label:'Driver',           col:() => COL.DRIVER },
+];
+
+const SHARE_PALETTE = [
+  '#2a78d6','#d03b3b','#0ca30c','#e8a020','#8b5cf6','#14b8a6','#ec4899','#f97316',
+  '#3b82f6','#84cc16','#06b6d4','#a855f7','#ef4444','#22c55e','#eab308','#6366f1',
+];
+const SHARE_OTHER_COLOR = '#b8b6b0';
+
+// SHARE_ROW_LIMIT: teto de linhas renderizadas por tabela. Dimensoes grandes
+// (Driver passa de 5 mil itens) travariam o navegador ao montar a matriz inteira;
+// o usuario expande sob demanda pelo botao "Mostrar todas".
+const SHARE_ROW_LIMIT = 200;
+const _shareState = { dim:'BASE', metric:'PKG', view:'DIA', topN:10, cell:'BOTH', showAll:false };
+let _shareLastAgg = null; // guarda o último agregado renderizado (usado pelos botões de copiar)
+
+function shareActiveDim() {
+  const d = SHARE_DIMS.find(x => x.key === _shareState.dim && x.col());
+  return d || SHARE_DIMS.find(x => x.col()) || null;
+}
+function shareMetricLabel() { return _shareState.metric === 'PKG' ? 'pacotes despachados' : 'rotas'; }
+function shareMetricShort() { return _shareState.metric === 'PKG' ? 'pacotes' : 'rotas'; }
+
+function setShareDim(v)    { _shareState.dim = v; _shareState.showAll = false; renderShare(); }
+function toggleShareShowAll() { _shareState.showAll = !_shareState.showAll; renderShare(); }
+function setShareMetric(v) { _shareState.metric = v; renderShare(); }
+function setShareView(v)   { _shareState.view = v; renderShare(); }
+function setShareTopN(v)   { _shareState.topN = parseInt(v,10) || 10; renderShare(); }
+function setShareCell(v)   { _shareState.cell = v; renderShare(); }
+
+// Preenche o <select> de dimensão com o que existir na base carregada.
+function populateShareDimSelect() {
+  const sel = document.getElementById('shareDim');
+  if (!sel) return;
+  const avail = SHARE_DIMS.filter(d => d.col());
+  if (!avail.length) { sel.innerHTML = '<option value="">—</option>'; return; }
+  if (!avail.some(d => d.key === _shareState.dim)) _shareState.dim = avail[0].key;
+  sel.innerHTML = avail.map(d => `<option value="${d.key}"${d.key===_shareState.dim?' selected':''}>${d.label}</option>`).join('');
+}
+
+/* ── Agregação central ──
+   Devolve períodos ordenados, o valor de cada item por período e os totais.
+   `periodMode`: 'DIA' usa COL.DATA (dd/mm/aaaa) · 'SEM' usa COL.SEMANA. */
+function shareAggregate(periodMode) {
+  const dim = shareActiveDim();
+  const empty = { dim:null, periods:[], items:[], byItem:new Map(), totalByPeriod:new Map(), grand:0 };
+  if (!dim) return empty;
+  const dimCol = dim.col();
+  const rows = getRouteLevelRows(getFiltered()); // 1 linha por rota — evita contagem dupla
+  if (!rows.length) return { ...empty, dim };
+
+  const perCol = periodMode === 'SEM' ? COL.SEMANA : COL.DATA;
+  if (!perCol) return { ...empty, dim };
+
+  const byItem = new Map();        // item -> { total, byPeriod: Map(p -> valor) }
+  const totalByPeriod = new Map(); // periodo -> total
+  let grand = 0;
+
+  rows.forEach(r => {
+    const item = ((r[dimCol] ?? '').toString().trim()) || 'N/D';
+    const per  = ((r[perCol] ?? '').toString().trim());
+    if (!per) return;
+    const val = _shareState.metric === 'PKG' ? n(r[COL.DESPACHADOS]) : 1;
+
+    const o = byItem.get(item) || { total:0, byPeriod:new Map() };
+    o.total += val;
+    o.byPeriod.set(per, (o.byPeriod.get(per) || 0) + val);
+    byItem.set(item, o);
+
+    totalByPeriod.set(per, (totalByPeriod.get(per) || 0) + val);
+    grand += val;
+  });
+
+  const periods = [...totalByPeriod.keys()].sort(periodMode === 'SEM'
+    ? (a,b) => (parseInt(a,10) || 0) - (parseInt(b,10) || 0)
+    : (a,b) => {
+        const da = parseDateBR(a), db = parseDateBR(b);
+        if (da && db && !isNaN(+da) && !isNaN(+db)) return da - db;
+        return a.localeCompare(b);
+      });
+
+  const items = [...byItem.keys()].sort((a,b) => byItem.get(b).total - byItem.get(a).total);
+  return { dim, periods, items, byItem, totalByPeriod, grand };
+}
+
+const _sharePct = (v, tot) => tot > 0 ? (v / tot * 100) : 0;
+const _shareFmtPct = v => v.toFixed(2).replace('.', ',') + '%';
+const _shareFmtPP  = v => (v > 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' pp';
+const _shareFmtNum = v => Math.round(v).toLocaleString('pt-BR');
+const _sharePeriodLabel = p => _shareState.view === 'SEM' ? `Sem ${p}` : p;
+
+/* ── Render principal ── */
+function renderShare() {
+  populateShareDimSelect();
+
+  // Sem coluna de semana, a visão semanal não faz sentido — cai pra visão diária.
+  const semBtn = document.getElementById('shareViewSEM');
+  if (semBtn) semBtn.style.display = COL.SEMANA ? '' : 'none';
+  if (!COL.SEMANA) _shareState.view = 'DIA';
+
+  // Estado visual dos botões
+  const mark = (id, on) => { const el = document.getElementById(id); if (el) el.classList.toggle('enc-btn-active', on); };
+  mark('shareMetricPKG', _shareState.metric === 'PKG');
+  mark('shareMetricROT', _shareState.metric === 'ROT');
+  mark('shareViewDIA',   _shareState.view === 'DIA');
+  mark('shareViewSEM',   _shareState.view === 'SEM');
+  mark('shareCellPCT',   _shareState.cell === 'PCT');
+  mark('shareCellABS',   _shareState.cell === 'ABS');
+  mark('shareCellBOTH',  _shareState.cell === 'BOTH');
+
+  const dim = shareActiveDim();
+  const inline = document.getElementById('shareDimLabelInline');
+  if (inline) inline.textContent = dim ? dim.label.toLowerCase() : 'item';
+
+  const agg = shareAggregate(_shareState.view);
+  _shareLastAgg = agg;
+
+  renderShareKPIs(agg);
+  renderShareCharts(agg);
+  renderShareTable(agg);
+  renderShareWow();
+}
+
+/* ── KPIs ── */
+function renderShareKPIs(agg) {
+  const el = document.getElementById('detKpiShare');
+  if (!el) return;
+  const dimLabel = agg.dim ? agg.dim.label : 'Item';
+  if (!agg.periods.length) {
+    el.innerHTML = `<div class="detail-kpi dk-orange"><label>Sem dados</label><div class="dk-val" style="font-size:14px">—</div><div class="dk-sub">nenhuma linha no recorte filtrado</div></div>`;
+    return;
+  }
+  const top = agg.items[0];
+  const topVal = top ? agg.byItem.get(top).total : 0;
+  const topPct = _sharePct(topVal, agg.grand);
+
+  // Concentração: quantos itens somam 80% do volume (Pareto)
+  let acc = 0, pareto = 0;
+  for (const it of agg.items) { acc += agg.byItem.get(it).total; pareto++; if (acc >= agg.grand * 0.8) break; }
+
+  // Top 3 concentrado
+  const top3 = agg.items.slice(0,3).reduce((s,i) => s + agg.byItem.get(i).total, 0);
+  const top3Pct = _sharePct(top3, agg.grand);
+
+  const perLabel = _shareState.view === 'SEM' ? 'semanas' : 'dias';
+  el.innerHTML = `
+    <div class="detail-kpi dk-blue"><label>Total de ${shareMetricShort()}</label><div class="dk-val">${_shareFmtNum(agg.grand)}</div><div class="dk-sub">${agg.periods.length} ${perLabel} · ${agg.items.length} ${dimLabel.toLowerCase()}${agg.items.length>1?'s':''}</div></div>
+    <div class="detail-kpi dk-green"><label>Maior share</label><div class="dk-val">${_shareFmtPct(topPct)}</div><div class="dk-sub">${top || '—'} · ${_shareFmtNum(topVal)} ${shareMetricShort()}</div></div>
+    <div class="detail-kpi dk-orange"><label>Top 3 concentram</label><div class="dk-val">${_shareFmtPct(top3Pct)}</div><div class="dk-sub">${agg.items.slice(0,3).join(' · ') || '—'}</div></div>
+    <div class="detail-kpi dk-blue"><label>Pareto 80%</label><div class="dk-val">${pareto}</div><div class="dk-sub">${pareto === 1 ? 'item concentra' : 'itens concentram'} 80% do volume</div></div>
+    ${renderShareSwingKpi(agg, dimLabel)}
+  `;
+}
+
+// KPI extra: maior variação de share entre os dois últimos períodos do recorte.
+function renderShareSwingKpi(agg, dimLabel) {
+  if (agg.periods.length < 2) return '';
+  const pPrev = agg.periods[agg.periods.length - 2];
+  const pCur  = agg.periods[agg.periods.length - 1];
+  const tPrev = agg.totalByPeriod.get(pPrev) || 0;
+  const tCur  = agg.totalByPeriod.get(pCur)  || 0;
+  let best = null;
+  agg.items.forEach(it => {
+    const o = agg.byItem.get(it);
+    const d = _sharePct(o.byPeriod.get(pCur) || 0, tCur) - _sharePct(o.byPeriod.get(pPrev) || 0, tPrev);
+    if (!best || Math.abs(d) > Math.abs(best.d)) best = { it, d };
+  });
+  if (!best) return '';
+  const cls = best.d >= 0 ? 'dk-green' : 'dk-red';
+  return `<div class="detail-kpi ${cls}"><label>Maior mudança de share</label><div class="dk-val">${_shareFmtPP(best.d)}</div><div class="dk-sub">${best.it} · ${_sharePeriodLabel(pPrev)} → ${_sharePeriodLabel(pCur)}</div></div>`;
+}
+
+/* ── Séries pro gráfico: Top N + "Outros" ── */
+function shareChartSeries(agg) {
+  const topN = _shareState.topN;
+  const top = agg.items.slice(0, topN);
+  const rest = agg.items.slice(topN);
+  const series = top.map((it, i) => ({
+    label: it,
+    color: SHARE_PALETTE[i % SHARE_PALETTE.length],
+    values: agg.periods.map(p => agg.byItem.get(it).byPeriod.get(p) || 0),
+  }));
+  if (rest.length) {
+    series.push({
+      label: `Outros (${rest.length})`,
+      color: SHARE_OTHER_COLOR,
+      values: agg.periods.map(p => rest.reduce((s,it) => s + (agg.byItem.get(it).byPeriod.get(p) || 0), 0)),
+    });
+  }
+  return series;
+}
+
+/* ── Gráficos ── */
+function renderShareCharts(agg) {
+  ['detChartShareMix','detChartShareTrend','detChartShareVol'].forEach(destroyDetChart);
+  const labels = agg.periods.map(_sharePeriodLabel);
+  const totals = agg.periods.map(p => agg.totalByPeriod.get(p) || 0);
+  const series = shareChartSeries(agg);
+  const perWord = _shareState.view === 'SEM' ? 'semana' : 'dia';
+
+  const mixT = document.getElementById('shareChartMixTitle');
+  if (mixT) mixT.textContent = `Composição do mix (100%) por ${perWord}`;
+  const trendT = document.getElementById('shareChartTrendTitle');
+  if (trendT) trendT.textContent = `Evolução do share (%) por ${perWord}`;
+  const volT = document.getElementById('shareChartVolTitle');
+  if (volT) volT.textContent = `Volume de ${shareMetricShort()} por ${perWord}`;
+
+  if (!agg.periods.length) return;
+
+  // 1) Barras empilhadas 100% (mix)
+  const mixCanvas = document.getElementById('detChartShareMix');
+  if (mixCanvas) {
+    detCharts['detChartShareMix'] = new Chart(mixCanvas, {
+      type:'bar',
+      data:{ labels, datasets: series.map(s => ({
+        label: s.label,
+        data: s.values.map((v,i) => _sharePct(v, totals[i])),
+        backgroundColor: s.color, borderRadius:2, borderSkipped:false,
+        _abs: s.values,
+      }))},
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{ position:'bottom', labels:{ font:{size:9}, boxWidth:10, boxHeight:10 } },
+          datalabels:{ display:false },
+          tooltip:{ callbacks:{ label: ctx => {
+            const abs = (ctx.dataset._abs || [])[ctx.dataIndex] || 0;
+            return `${ctx.dataset.label}: ${_shareFmtPct(ctx.parsed.y)} (${_shareFmtNum(abs)})`;
+          } } }
+        },
+        scales:{
+          x:{ stacked:true, ticks:{ font:{size:9}, maxRotation:45 }, grid:{display:false} },
+          y:{ stacked:true, min:0, max:100, ticks:{ font:{size:10}, callback: v => v + '%' } }
+        } }
+    });
+  }
+
+  // 2) Linhas de evolução do share
+  const trendCanvas = document.getElementById('detChartShareTrend');
+  if (trendCanvas) {
+    detCharts['detChartShareTrend'] = new Chart(trendCanvas, {
+      type:'line',
+      data:{ labels, datasets: series.map(s => ({
+        label: s.label,
+        data: s.values.map((v,i) => _sharePct(v, totals[i])),
+        borderColor: s.color, backgroundColor:'transparent',
+        borderWidth:2, pointRadius:2.5, pointHoverRadius:5, tension:0.28,
+      }))},
+      options:{ responsive:true, maintainAspectRatio:false,
+        interaction:{ mode:'index', intersect:false },
+        plugins:{
+          legend:{ position:'bottom', labels:{ font:{size:9}, boxWidth:10, boxHeight:10 } },
+          datalabels:{ display:false },
+          tooltip:{ callbacks:{ label: ctx => `${ctx.dataset.label}: ${_shareFmtPct(ctx.parsed.y)}` } }
+        },
+        scales:{
+          x:{ ticks:{ font:{size:9}, maxRotation:45 }, grid:{display:false} },
+          y:{ min:0, ticks:{ font:{size:10}, callback: v => v + '%' } }
+        } }
+    });
+  }
+
+  // 3) Volume absoluto empilhado, com o total no topo de cada barra
+  const volCanvas = document.getElementById('detChartShareVol');
+  if (volCanvas) {
+    const lastIdx = series.length - 1;
+    detCharts['detChartShareVol'] = new Chart(volCanvas, {
+      type:'bar',
+      data:{ labels, datasets: series.map((s, i) => ({
+        label: s.label, data: s.values,
+        backgroundColor: s.color, borderRadius:2, borderSkipped:false,
+        datalabels:{
+          display: i === lastIdx,
+          anchor:'end', align:'end', offset:2, clip:false,
+          color:'#45433f', font:{ size:9, weight:'700' },
+          formatter: (_, ctx) => _shareFmtNum(totals[ctx.dataIndex]),
+        },
+      }))},
+      options:{ responsive:true, maintainAspectRatio:false,
+        layout:{ padding:{ top:18 } },
+        plugins:{
+          legend:{ position:'bottom', labels:{ font:{size:9}, boxWidth:10, boxHeight:10 } },
+          tooltip:{ callbacks:{ label: ctx => {
+            const pct = _sharePct(ctx.parsed.y, totals[ctx.dataIndex]);
+            return `${ctx.dataset.label}: ${_shareFmtNum(ctx.parsed.y)} (${_shareFmtPct(pct)})`;
+          } } }
+        },
+        scales:{
+          x:{ stacked:true, ticks:{ font:{size:9}, maxRotation:45 }, grid:{display:false} },
+          y:{ stacked:true, min:0, ticks:{ font:{size:10}, callback: v => _shareFmtNum(v) } }
+        } }
+    });
+  }
+}
+
+/* ── Matriz item × período ── */
+function renderShareTable(agg) {
+  const head = document.getElementById('shareTblHead');
+  const body = document.getElementById('shareTblBody');
+  const foot = document.getElementById('shareTblFoot');
+  const title = document.getElementById('shareTblTitle');
+  const count = document.getElementById('shareTblCount');
+  if (!head || !body || !foot) return;
+
+  const dimLabel = agg.dim ? agg.dim.label : 'Item';
+  const perWord = _shareState.view === 'SEM' ? 'semana' : 'dia';
+  if (title) title.textContent = `Matriz de share — ${dimLabel} × ${perWord} (${shareMetricLabel()})`;
+
+  if (!agg.periods.length) {
+    head.innerHTML = ''; body.innerHTML = `<tr><td style="padding:16px;color:var(--text-muted)">Sem dados no recorte filtrado.</td></tr>`; foot.innerHTML = '';
+    if (count) count.textContent = '';
+    return;
+  }
+
+  const q = (document.getElementById('shareSearch')?.value || '').trim().toLowerCase();
+  const matched = q ? agg.items.filter(i => i.toLowerCase().includes(q)) : agg.items;
+  const capped = !_shareState.showAll && matched.length > SHARE_ROW_LIMIT;
+  const items = capped ? matched.slice(0, SHARE_ROW_LIMIT) : matched;
+
+  // Cabeçalho: item | períodos… | Δ vs período anterior | Total | Share total
+  const deltaCol = agg.periods.length >= 2;
+  let ci = 0;
+  const th = (label, title) => `<th onclick="sortDtbl('shareTbl',${ci++})"${title?` title="${title}"`:''}>${label}</th>`;
+  head.innerHTML = `<tr>
+    ${th(dimLabel)}
+    ${agg.periods.map(p => th(_sharePeriodLabel(p))).join('')}
+    ${deltaCol ? th('Δ share', 'Variação de share entre os dois últimos períodos') : ''}
+    ${th('Total')}
+    ${th('Share total')}
+  </tr>`;
+
+  const cell = (val, tot) => {
+    const pct = _sharePct(val, tot);
+    // data-sort usa sempre o share, pra ordenacao ser coerente em qualquer modo de exibicao
+    const ds = ` data-sort="${pct}"`;
+    if (!val) return `<td data-sort="0"><span style="color:var(--text-muted)">—</span></td>`;
+    if (_shareState.cell === 'PCT') return `<td${ds}>${_shareFmtPct(pct)}</td>`;
+    if (_shareState.cell === 'ABS') return `<td${ds}>${_shareFmtNum(val)}</td>`;
+    return `<td${ds}><strong>${_shareFmtPct(pct)}</strong><br><span style="font-size:9px;color:var(--text-muted)">${_shareFmtNum(val)}</span></td>`;
+  };
+
+  const pPrev = deltaCol ? agg.periods[agg.periods.length - 2] : null;
+  const pCur  = deltaCol ? agg.periods[agg.periods.length - 1] : null;
+
+  body.innerHTML = items.map(it => {
+    const o = agg.byItem.get(it);
+    const cells = agg.periods.map(p => cell(o.byPeriod.get(p) || 0, agg.totalByPeriod.get(p) || 0)).join('');
+    let deltaCell = '';
+    if (deltaCol) {
+      const d = _sharePct(o.byPeriod.get(pCur) || 0, agg.totalByPeriod.get(pCur) || 0)
+              - _sharePct(o.byPeriod.get(pPrev) || 0, agg.totalByPeriod.get(pPrev) || 0);
+      const flat = Math.abs(d) < 0.005;
+      const color = flat ? 'var(--text-muted)' : (d > 0 ? 'var(--success)' : 'var(--danger)');
+      const arrow = flat ? '➖' : (d > 0 ? '▲' : '▼');
+      deltaCell = `<td data-sort="${d}" style="color:${color};font-weight:700">${arrow} ${_shareFmtPP(d)}</td>`;
+    }
+    const totPct = _sharePct(o.total, agg.grand);
+    return `<tr>
+      <td><strong>${it}</strong></td>
+      ${cells}
+      ${deltaCell}
+      <td data-sort="${o.total}">${_shareFmtNum(o.total)}</td>
+      <td data-sort="${totPct}"><div class="imp-bar-wrap"><span style="min-width:52px;font-weight:700">${_shareFmtPct(totPct)}</span><div class="imp-bar-bg"><div class="imp-bar-fill" style="width:${Math.min(100,totPct).toFixed(1)}%;background:#2a78d6"></div></div></div></td>
+    </tr>`;
+  }).join('');
+
+  foot.innerHTML = `<tr style="background:var(--surface-1);font-weight:700">
+    <td>Total</td>
+    ${agg.periods.map(p => `<td>${_shareFmtNum(agg.totalByPeriod.get(p) || 0)}</td>`).join('')}
+    ${deltaCol ? '<td>—</td>' : ''}
+    <td>${_shareFmtNum(agg.grand)}</td>
+    <td>100,00%</td>
+  </tr>`;
+
+  if (count) {
+    const btn = matched.length > SHARE_ROW_LIMIT
+      ? ` <button class="chart-btn" onclick="toggleShareShowAll()">${_shareState.showAll ? 'Mostrar só as ' + SHARE_ROW_LIMIT + ' maiores' : 'Mostrar todas as ' + matched.length.toLocaleString('pt-BR') + ' linhas'}</button>`
+      : '';
+    const cap = capped ? ` · <strong>exibindo as ${SHARE_ROW_LIMIT} maiores</strong>` : '';
+    count.innerHTML = `${items.length.toLocaleString('pt-BR')} de ${agg.items.length.toLocaleString('pt-BR')} ${dimLabel.toLowerCase()}(s)${cap} · ${agg.periods.length} ${perWord}(s) · métrica: ${shareMetricLabel()}${btn}`;
+  }
+}
+
+/* ── Comparativo semana × semana (independe da visão escolhida) ── */
+function renderShareWow() {
+  const card = document.getElementById('shareWowCard');
+  const body = document.getElementById('shareWowBody');
+  const sub  = document.getElementById('shareWowSub');
+  const upEl = document.getElementById('shareWowUp');
+  const dnEl = document.getElementById('shareWowDown');
+  if (!card || !body) return;
+
+  if (!COL.SEMANA) { card.style.display = 'none'; return; }
+  const agg = shareAggregate('SEM');
+  if (agg.periods.length < 2) {
+    card.style.display = '';
+    body.innerHTML = `<tr><td colspan="8" style="padding:16px;color:var(--text-muted)">É preciso ter ao menos <strong>duas semanas</strong> no recorte filtrado para comparar. Ajuste o filtro de Semana no topo.</td></tr>`;
+    if (sub) sub.textContent = '';
+    if (upEl) upEl.innerHTML = ''; if (dnEl) dnEl.innerHTML = '';
+    return;
+  }
+  card.style.display = '';
+
+  const wPrev = agg.periods[agg.periods.length - 2];
+  const wCur  = agg.periods[agg.periods.length - 1];
+  const tPrev = agg.totalByPeriod.get(wPrev) || 0;
+  const tCur  = agg.totalByPeriod.get(wCur)  || 0;
+  const dimLabel = agg.dim ? agg.dim.label : 'Item';
+
+  // Cabeçalhos dinâmicos com o número real da semana
+  const setTh = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
+  setTh('shareWowTh0', dimLabel);
+  setTh('shareWowTh1', `Sem ${wPrev}`);
+  setTh('shareWowTh3', `Sem ${wCur}`);
+
+  const dTotal = tCur - tPrev;
+  const dTotalPct = tPrev > 0 ? (dTotal / tPrev * 100) : 0;
+  const dTotColor = dTotal >= 0 ? 'var(--success)' : 'var(--danger)';
+  if (sub) sub.innerHTML = `Comparando <strong>Sem ${wPrev}</strong> (${_shareFmtNum(tPrev)} ${shareMetricShort()}) × <strong>Sem ${wCur}</strong> (${_shareFmtNum(tCur)} ${shareMetricShort()}) · variação total <span style="color:${dTotColor};font-weight:700">${dTotal>=0?'+':''}${_shareFmtNum(dTotal)} (${dTotalPct>=0?'+':''}${dTotalPct.toFixed(1).replace('.',',')}%)</span>. Atenção: se a semana atual ainda estiver em curso, a queda de volume é esperada — o <strong>share</strong> segue comparável.`;
+
+  const q = (document.getElementById('shareSearch')?.value || '').trim().toLowerCase();
+  const rowsData = agg.items.map(it => {
+    const o = agg.byItem.get(it);
+    const vPrev = o.byPeriod.get(wPrev) || 0;
+    const vCur  = o.byPeriod.get(wCur)  || 0;
+    const sPrev = _sharePct(vPrev, tPrev);
+    const sCur  = _sharePct(vCur,  tCur);
+    return { it, vPrev, vCur, sPrev, sCur, dPP: sCur - sPrev, dVol: vCur - vPrev, dVolPct: vPrev > 0 ? ((vCur - vPrev) / vPrev * 100) : (vCur > 0 ? 100 : 0) };
+  }).sort((a,b) => b.sCur - a.sCur);
+
+  const matchedWow = q ? rowsData.filter(r => r.it.toLowerCase().includes(q)) : rowsData;
+  const shown = _shareState.showAll ? matchedWow : matchedWow.slice(0, SHARE_ROW_LIMIT);
+
+  const pill = (v, fmt) => {
+    const flat = Math.abs(v) < 0.005;
+    const color = flat ? 'var(--text-muted)' : (v > 0 ? 'var(--success)' : 'var(--danger)');
+    const arrow = flat ? '➖' : (v > 0 ? '▲' : '▼');
+    return `<td data-sort="${v}" style="color:${color};font-weight:700">${arrow} ${fmt(v)}</td>`;
+  };
+
+  body.innerHTML = shown.map(r => `<tr>
+    <td><strong>${r.it}</strong></td>
+    <td data-sort="${r.vPrev}">${_shareFmtNum(r.vPrev)}</td>
+    <td data-sort="${r.sPrev}">${_shareFmtPct(r.sPrev)}</td>
+    <td data-sort="${r.vCur}">${_shareFmtNum(r.vCur)}</td>
+    <td data-sort="${r.sCur}"><strong>${_shareFmtPct(r.sCur)}</strong></td>
+    ${pill(r.dPP, _shareFmtPP)}
+    ${pill(r.dVol, v => (v>0?'+':'') + _shareFmtNum(v))}
+    ${pill(r.dVolPct, v => (v>0?'+':'') + v.toFixed(1).replace('.',',') + '%')}
+  </tr>`).join('') || `<tr><td colspan="8" style="padding:16px;color:var(--text-muted)">Nenhum item corresponde à busca.</td></tr>`;
+
+  if (matchedWow.length > shown.length) {
+    body.insertAdjacentHTML('beforeend', `<tr><td colspan="8" style="padding:10px 16px;color:var(--text-muted)">Exibindo as ${shown.length} maiores de ${matchedWow.length.toLocaleString('pt-BR')} — use o botão no rodapé da matriz acima para expandir.</td></tr>`);
+  }
+
+  // Destaques: 5 maiores ganhos e 5 maiores perdas de share
+  const mini = r => `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 9px;border-bottom:0.5px solid var(--border);font-size:11.5px">
+      <span style="font-weight:600">${r.it}</span>
+      <span style="color:${r.dPP>=0?'var(--success)':'var(--danger)'};font-weight:700;white-space:nowrap">${_shareFmtPP(r.dPP)}</span>
+      <span style="color:var(--text-muted);white-space:nowrap;font-size:10.5px">${_shareFmtPct(r.sPrev)} → ${_shareFmtPct(r.sCur)}</span>
+    </div>`;
+  const byPP = [...rowsData].sort((a,b) => b.dPP - a.dPP);
+  if (upEl) upEl.innerHTML = byPP.filter(r => r.dPP > 0).slice(0,5).map(mini).join('') || `<div style="font-size:11px;color:var(--text-muted);padding:6px 0">Nenhum item ganhou share.</div>`;
+  if (dnEl) dnEl.innerHTML = byPP.filter(r => r.dPP < 0).slice(-5).reverse().map(mini).join('') || `<div style="font-size:11px;color:var(--text-muted);padding:6px 0">Nenhum item perdeu share.</div>`;
+}
+
+/* ── Cópia pra colar em planilha (TSV) ── */
+function _shareCopy(text, okMsg) {
+  navigator.clipboard.writeText(text)
+    .then(() => showError(okMsg))
+    .catch(() => showError('Não foi possível copiar.'));
+}
+
+function copyShareTable() {
+  const agg = _shareLastAgg;
+  if (!agg || !agg.periods.length) { showError('Nada para copiar.'); return; }
+  const dimLabel = agg.dim ? agg.dim.label : 'Item';
+  const head = [dimLabel, ...agg.periods.map(p => `${_sharePeriodLabel(p)} (${shareMetricShort()})`), ...agg.periods.map(p => `${_sharePeriodLabel(p)} share %`), 'Total', 'Share total %'];
+  const lines = agg.items.map(it => {
+    const o = agg.byItem.get(it);
+    const abs = agg.periods.map(p => Math.round(o.byPeriod.get(p) || 0));
+    const pct = agg.periods.map(p => _sharePct(o.byPeriod.get(p) || 0, agg.totalByPeriod.get(p) || 0).toFixed(2).replace('.', ','));
+    return [it, ...abs, ...pct, Math.round(o.total), _sharePct(o.total, agg.grand).toFixed(2).replace('.', ',')].join('\t');
+  });
+  _shareCopy([head.join('\t'), ...lines].join('\n'), `Matriz de share copiada (${agg.items.length} linhas).`);
+}
+
+function copyShareWow() {
+  const agg = shareAggregate('SEM');
+  if (agg.periods.length < 2) { showError('É preciso ter duas semanas no recorte para copiar o comparativo.'); return; }
+  const wPrev = agg.periods[agg.periods.length - 2];
+  const wCur  = agg.periods[agg.periods.length - 1];
+  const tPrev = agg.totalByPeriod.get(wPrev) || 0;
+  const tCur  = agg.totalByPeriod.get(wCur)  || 0;
+  const dimLabel = agg.dim ? agg.dim.label : 'Item';
+  const head = [dimLabel, `Sem ${wPrev}`, `Share ${wPrev} %`, `Sem ${wCur}`, `Share ${wCur} %`, 'Delta share pp', 'Delta volume', 'Delta volume %'];
+  const fx = v => v.toFixed(2).replace('.', ',');
+  const lines = agg.items.map(it => {
+    const o = agg.byItem.get(it);
+    const vPrev = o.byPeriod.get(wPrev) || 0, vCur = o.byPeriod.get(wCur) || 0;
+    const sPrev = _sharePct(vPrev, tPrev), sCur = _sharePct(vCur, tCur);
+    const dVolPct = vPrev > 0 ? ((vCur - vPrev) / vPrev * 100) : (vCur > 0 ? 100 : 0);
+    return [it, Math.round(vPrev), fx(sPrev), Math.round(vCur), fx(sCur), fx(sCur - sPrev), Math.round(vCur - vPrev), fx(dVolPct)].join('\t');
+  });
+  _shareCopy([head.join('\t'), ...lines].join('\n'), `Comparativo Sem ${wPrev} × Sem ${wCur} copiado.`);
 }
 
 /* ══════════════════════════════════════════
@@ -4795,6 +5450,7 @@ function showMainTab(id, btn) {
   if (id === 'tabEncerramento') renderEncerramento();
   if (id === 'tabDobra') renderDetailDobra();
   if (id === 'tabOfensores') renderOfensores();
+  if (id === 'tabShare') renderShare();
 }
 
 /* ══════════════════════════════════════════
@@ -4829,6 +5485,13 @@ function sortDtbl(tblId, colIdx) {
   const tbody = tbl.querySelector('tbody'); if(!tbody) return;
   const rows = [...tbody.querySelectorAll('tr')];
   rows.sort((a,b) => {
+    // data-sort na celula tem prioridade: permite ordenar numericamente celulas
+    // que exibem icones/pills (ex.: "▲ +0,44 pp"), onde o parse do texto falharia.
+    const sa = a.cells[colIdx]?.dataset?.sort, sb = b.cells[colIdx]?.dataset?.sort;
+    if (sa !== undefined && sb !== undefined) {
+      const va = parseFloat(sa), vb = parseFloat(sb);
+      if (!isNaN(va) && !isNaN(vb)) return asc ? va-vb : vb-va;
+    }
     const ta = a.cells[colIdx]?.innerText?.trim()||'';
     const tb2 = b.cells[colIdx]?.innerText?.trim()||'';
     const na = parseFloat(ta.replace(/\./g,'').replace(',','.')); const nb = parseFloat(tb2.replace(/\./g,'').replace(',','.'));
