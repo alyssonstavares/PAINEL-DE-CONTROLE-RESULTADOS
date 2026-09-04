@@ -305,6 +305,10 @@ table.dtbl.dtbl-narrow th:first-child, table.dtbl.dtbl-narrow td:first-child { t
 table.dtbl tr:last-child td { border-bottom: none; }
 table.dtbl tr:hover td { background: var(--surface-1); }
 
+.lbl-mini { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.sub-th { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); font-size: 9px; }
+table.dtbl thead tr:first-child th { border-bottom: 0.5px solid var(--border); }
+
 /* Rank badge */
 .rank-top { color: var(--danger); font-weight: 800; }
 .rank-low { color: var(--text-muted); font-size: 10px; }
@@ -568,7 +572,7 @@ table.detail tr:hover td { background: var(--surface-1); }
       </div>
     </div>
     <div class="filter-group" id="fgCiclo" style="display:none">
-      <label>Ciclo</label>
+      <label title="AM1, AM2, PM1, SD, CHP, SDE1 — vem de CICLO_FINAL">Ciclo</label>
       <div class="ms-trigger" id="filterCiclo" tabindex="0">Todos</div>
       <div class="ms-dropdown" id="dropCiclo">
         <div class="ms-search"><input type="text" placeholder="Buscar..." id="searchCiclo"></div>
@@ -742,6 +746,60 @@ table.detail tr:hover td { background: var(--surface-1); }
             <tbody id="detTblDSMlpBody"></tbody>
           </table>
         </div>
+        </div>
+      </div>
+      <!-- ══════ BUDGET DE INSUCESSOS POR MLP ══════ -->
+      <div class="detail-card" id="cardDsBudget">
+        <div class="detail-card-title" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <span>🎯 Budget de insucessos por MLP — histórico × semana atual</span>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="lbl-mini">Meta de DS</span>
+            <select id="dsBudgetMeta" onchange="setDsBudgetMeta(this.value)" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:4px 8px;font-size:11.5px;background:var(--surface-1);color:var(--text-primary);outline:none">
+              <option value="98.5" selected>98,5%</option>
+              <option value="99">99,0%</option>
+              <option value="98">98,0%</option>
+              <option value="97.5">97,5%</option>
+            </select>
+            <span class="lbl-mini">Histórico</span>
+            <select id="dsBudgetHist" onchange="setDsBudgetHist(this.value)" style="border:0.5px solid var(--border-strong);border-radius:var(--radius);padding:4px 8px;font-size:11.5px;background:var(--surface-1);color:var(--text-primary);outline:none">
+              <option value="2">2 semanas</option>
+              <option value="3" selected>3 semanas</option>
+              <option value="4">4 semanas</option>
+            </select>
+            <button class="chart-btn" onclick="copyDsBudget()">📋 Copiar</button>
+            <button class="chart-btn" id="minBtn_dsBudget" onclick="toggleCardMin('body_dsBudget','minBtn_dsBudget')" title="Minimizar/expandir">▾ Minimizar</button>
+          </div>
+        </div>
+        <div id="body_dsBudget">
+          <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px;line-height:1.55" id="dsBudgetExplica"></div>
+          <div class="detail-kpi-row" id="dsBudgetKpis" style="margin-bottom:14px"></div>
+          <div class="detail-table-wrap" style="max-height:520px">
+            <table class="dtbl" id="tblDsBudget">
+              <thead>
+                <tr>
+                  <th rowspan="2" onclick="sortDtbl('tblDsBudget',0)">MLP / Carrier</th>
+                  <th colspan="4" style="text-align:center;border-left:1.5px solid var(--border-strong)">Histórico <span class="sub-th" id="dsBudgetHistLabel"></span></th>
+                  <th colspan="7" style="text-align:center;border-left:1.5px solid var(--border-strong)">Semana atual <span class="sub-th" id="dsBudgetAtualLabel"></span></th>
+                </tr>
+                <tr>
+                  <th style="border-left:1.5px solid var(--border-strong)" onclick="sortDtbl('tblDsBudget',1)">Rotas/sem</th>
+                  <th onclick="sortDtbl('tblDsBudget',2)">Desp./sem</th>
+                  <th onclick="sortDtbl('tblDsBudget',3)">Insuc./sem</th>
+                  <th onclick="sortDtbl('tblDsBudget',4)">DS médio</th>
+                  <th style="border-left:1.5px solid var(--border-strong)" onclick="sortDtbl('tblDsBudget',5)">Rotas</th>
+                  <th onclick="sortDtbl('tblDsBudget',6)">Despachados</th>
+                  <th onclick="sortDtbl('tblDsBudget',7)">Insucessos</th>
+                  <th onclick="sortDtbl('tblDsBudget',8)" title="Máximo de insucessos que ainda mantém a meta de DS">Teto</th>
+                  <th onclick="sortDtbl('tblDsBudget',9)" title="Teto menos os insucessos já ocorridos">Saldo</th>
+                  <th onclick="sortDtbl('tblDsBudget',10)">DS %</th>
+                  <th onclick="sortDtbl('tblDsBudget',11)">ORHC %</th>
+                </tr>
+              </thead>
+              <tbody id="tblDsBudgetBody"></tbody>
+              <tfoot id="tblDsBudgetFoot"></tfoot>
+            </table>
+          </div>
+          <div id="dsBudgetNota" style="font-size:11px;color:var(--text-muted);padding:8px 0 0"></div>
         </div>
       </div>
       <div class="detail-grid-2 detail-grid-ds-svc">
@@ -1881,6 +1939,11 @@ const COL = {};
 ══════════════════════════════════════════ */
 const REMOTE_CSV_URL = '/api/sheet-csv'; // proxy serverless da Vercel (api/sheet-csv.js) — evita o bloqueio de CORS do link direto do Google
 const GRID_SHEET_ID  = '1WCZ6rNWZQO1jbMUdVf2IHXZnGBXPSNJXx2eGEVhlq1Y'; // ID da planilha
+// doc_id do documento no Grid. Tem que ser fixo: a documentação do SDK diz para NUNCA
+// derivar do location.pathname, porque o Grid serve o HTML dentro de um iframe cujo
+// caminho não contém /d/<docId> — era isso que fazia o Grid.configure() nunca rodar
+// e a leitura da planilha falhar com um objeto de erro sem mensagem.
+const GRID_DOC_ID    = '01M1GZH1RNVYXYE5ZGBKBZ7597';
 const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
 /* ══════════════════════════════════════════
    ASSISTENTE DE IA (opcional)
@@ -1890,7 +1953,9 @@ const GRID_SHEET_TAB = 'DASH_EXPORT'; // nome da aba
    pela URL completa, ex: 'https://seu-projeto.vercel.app/api/ask'.
    Deixe vazio ('') pra esconder o botão de IA no dashboard.
 ══════════════════════════════════════════ */
-const AI_ASK_URL = '/api/ask';
+// A função serverless /api/ask só existe no deploy da Vercel. Dentro do Grid esse
+// caminho não é servido, então o botão de IA se esconde em vez de dar 404 ao clicar.
+const AI_ASK_URL = (typeof Grid !== 'undefined') ? '' : '/api/ask';
 const REMOTE_REFRESH_START_HOUR = 6;
 const REMOTE_REFRESH_END_HOUR   = 23;
 const REMOTE_REFRESH_MINUTE     = 10; // lê a planilha em HH:10, após o refresh horário do BigQuery/Sheets
@@ -1929,7 +1994,7 @@ function detectColumns(headers) {
     TIPO_VEICULO:    ['Tipo_veiculo','TIPO_VEICULO','TIPO_VEICULO_PADRAO','TIPO','VEHICLE_TYPE'],
     CLUSTER:         ['CLUSTER','CLUSTER_ID','CLUSTER_ROTA'],
     CICLO:           ['CICLO','CICLO_AM_PM','CICLO_ENTREGA','CYCLE'],
-    CICLO_FINAL:     ['CICLO_FINAL','CICLO_FIM','CYCLE_FINAL','CICLO_DETALHADO'],
+    CICLO_FINAL:     ['CICLO_FINAL','CICLO_FIM','CYCLE_FINAL','CICLO_DETALHADO','CICLO_REAL','CYCLE'],
     HORA_FIM:        ['hora_fim','HORA_FIM','HORA_FIM_ROTA','END_TIME'],
     HORA_INICIO:     ['hora_inicio','HORA_INICIO','HORA_INICIO_ROTA','START_TIME'],
     PLACA:           ['PLATE','PLACA','PLACA_VEICULO'],
@@ -1978,6 +2043,13 @@ function detectColumns(headers) {
     }
   }
 }
+
+/* Coluna de ciclo do painel.
+   CICLO tem so AM/PM; CICLO_FINAL distingue AM1, AM2, PM1, SD, CHP e SDE1 — e ciclo
+   novo entra sozinho ali, sem mexer no codigo. Como AM/PM e deduzivel do detalhado
+   (AM1 e CHP sao AM; o resto e PM), o painel usa o detalhado quando existe e cai no
+   grosseiro so em bases antigas que nao tenham a coluna. */
+function cicloCol() { return COL.CICLO_FINAL || COL.CICLO || null; }
 
 function n(v) {
   if (v === null || v === undefined) return 0;
@@ -3136,6 +3208,228 @@ function update() {
 }
 
 /* ══════════════════════════════════════════
+   BUDGET DE INSUCESSOS POR MLP
+
+   A meta de DS define, sozinha, quantos insucessos cada MLP pode ter:
+   DS >= meta  ⇔  insucessos <= despachados × (1 − meta/100).
+
+   Como insucesso é contagem inteira, o teto é o piso desse produto — com meta
+   de 98,5%, quem despachou 1.334 pacotes pode falhar 20 (1.314/1.334 = 98,50%)
+   e no 21º já perde a meta. O teto acompanha o volume: MLP que despacha mais
+   pode falhar mais em número absoluto, e é por isso que a conversa tem que ser
+   em "quantos insucessos você ainda tem" e não em percentual.
+══════════════════════════════════════════ */
+
+let _dsBudgetMeta = 98.5;  // %
+let _dsBudgetHist = 3;     // semanas de histórico
+
+function setDsBudgetMeta(v) { _dsBudgetMeta = parseFloat(v) || 98.5; renderDsBudget(); }
+function setDsBudgetHist(v) { _dsBudgetHist = parseInt(v, 10) || 3;  renderDsBudget(); }
+
+// Teto de insucessos para um volume despachado, dada a meta.
+function _tetoInsucesso(desp, meta) {
+  if (!(desp > 0)) return 0;
+  return Math.floor(desp * (1 - meta / 100));
+}
+
+// Agrega por MLP um conjunto de linhas já deduplicado por rota.
+function _dsBudgetAgg(rows) {
+  const m = new Map();
+  rows.forEach(r => {
+    const c = ((r[COL.CARRIER] || '').toString().trim()) || 'N/D';
+    const o = m.get(c) || { rotas: 0, desp: 0, entr: 0, orhcOk: 0, orhcTot: 0, semanas: new Set() };
+    o.rotas++;
+    o.desp += n(r[COL.DESPACHADOS]);
+    o.entr += n(r[COL.ENTREGUES]);
+    if (COL.ORHC) {
+      const v = r[COL.ORHC];
+      if (v !== '' && v !== null && v !== undefined) { o.orhcTot++; if (n(v) === 1) o.orhcOk++; }
+    }
+    if (COL.SEMANA) { const s = (r[COL.SEMANA] || '').toString().trim(); if (s) o.semanas.add(s); }
+    m.set(c, o);
+  });
+  return m;
+}
+
+/* Divide o recorte em "semana atual" e "N semanas anteriores".
+   O histórico ignora o filtro de semana do topo de propósito: senão, filtrar
+   uma semana só deixaria a comparação vazia — que é justamente o caso de uso. */
+function _dsBudgetJanelas() {
+  if (!COL.SEMANA) return null;
+  const excluirAbertas = document.getElementById('toggleExcluirAbertas')?.checked ?? true;
+  const todas = getRouteLevelRows(getFilteredExceptSemana().filter(r => !excluirAbertas || isRouteClosed(r)));
+  if (!todas.length) return null;
+
+  const semanasDoRecorte = [...new Set(getRouteLevelRows(getFiltered()).map(r => (r[COL.SEMANA] || '').trim()).filter(Boolean))];
+  const semanasTodas = [...new Set(todas.map(r => (r[COL.SEMANA] || '').trim()).filter(Boolean))]
+    .sort((a, b) => (parseInt(a, 10) || 0) - (parseInt(b, 10) || 0));
+  if (!semanasTodas.length) return null;
+
+  // A semana "atual" é a mais recente do recorte filtrado; sem filtro, a mais recente que existe.
+  const atual = semanasDoRecorte.length
+    ? semanasDoRecorte.sort((a, b) => (parseInt(b, 10) || 0) - (parseInt(a, 10) || 0))[0]
+    : semanasTodas[semanasTodas.length - 1];
+
+  const iAtual = semanasTodas.indexOf(atual);
+  const anteriores = iAtual > 0 ? semanasTodas.slice(Math.max(0, iAtual - _dsBudgetHist), iAtual) : [];
+
+  const setAnt = new Set(anteriores);
+  return {
+    atual,
+    anteriores,
+    rowsAtual: todas.filter(r => (r[COL.SEMANA] || '').trim() === atual),
+    rowsAnt: todas.filter(r => setAnt.has((r[COL.SEMANA] || '').trim())),
+  };
+}
+
+function renderDsBudget() {
+  const card = document.getElementById('cardDsBudget');
+  const body = document.getElementById('tblDsBudgetBody');
+  const foot = document.getElementById('tblDsBudgetFoot');
+  const kpis = document.getElementById('dsBudgetKpis');
+  const nota = document.getElementById('dsBudgetNota');
+  const expl = document.getElementById('dsBudgetExplica');
+  if (!card || !body) return;
+
+  const meta = _dsBudgetMeta;
+  const pctMax = (1 - meta / 100) * 100;
+  if (expl) expl.innerHTML = `Com a meta de DS em <strong>${fmtPt(meta)}%</strong>, cada MLP pode falhar no máximo <strong>${fmtPt(pctMax)}%</strong> do que despachou. O <strong>Teto</strong> é esse limite convertido em número de pacotes, recalculado pelo volume da própria semana; o <strong>Saldo</strong> é quanto ainda resta antes de perder a meta. Saldo negativo significa que a meta já caiu — o número diz de quantos insucessos foi o excesso.`;
+
+  const j = _dsBudgetJanelas();
+  if (!j) {
+    card.style.display = COL.SEMANA ? '' : 'none';
+    body.innerHTML = `<tr><td colspan="12" style="padding:16px;color:var(--text-muted)">Sem coluna de semana na base — não dá para montar a comparação.</td></tr>`;
+    if (foot) foot.innerHTML = ''; if (kpis) kpis.innerHTML = ''; if (nota) nota.textContent = '';
+    return;
+  }
+  card.style.display = '';
+
+  const lblHist = document.getElementById('dsBudgetHistLabel');
+  const lblAtual = document.getElementById('dsBudgetAtualLabel');
+  if (lblHist)  lblHist.textContent  = j.anteriores.length ? `(sem ${j.anteriores.join(', ')})` : '(sem histórico)';
+  if (lblAtual) lblAtual.textContent = `(sem ${j.atual})`;
+
+  const aggAtual = _dsBudgetAgg(j.rowsAtual);
+  const aggAnt   = _dsBudgetAgg(j.rowsAnt);
+  const nSemAnt  = j.anteriores.length;
+
+  const linhas = [...aggAtual.entries()].map(([mlp, a]) => {
+    const insuc = Math.max(0, a.desp - a.entr);
+    const teto  = _tetoInsucesso(a.desp, meta);
+    const saldo = teto - insuc;
+    const ds    = a.desp > 0 ? (a.entr / a.desp * 100) : 0;
+    const orhc  = a.orhcTot > 0 ? (a.orhcOk / a.orhcTot * 100) : null;
+
+    const h = aggAnt.get(mlp);
+    const hSem = h ? (h.semanas.size || nSemAnt || 1) : 0;
+    const hist = h ? {
+      rotas: h.rotas / hSem,
+      desp:  h.desp / hSem,
+      insuc: Math.max(0, h.desp - h.entr) / hSem,
+      ds:    h.desp > 0 ? (h.entr / h.desp * 100) : 0,
+    } : null;
+
+    return { mlp, rotas: a.rotas, desp: a.desp, insuc, teto, saldo, ds, orhc, hist,
+             dDs: hist ? ds - hist.ds : null };
+  }).sort((x, y) => x.saldo - y.saldo); // pior saldo primeiro
+
+  // ── KPIs ──
+  const estourados = linhas.filter(l => l.saldo < 0);
+  const excedente  = estourados.reduce((s, l) => s + Math.abs(l.saldo), 0);
+  const noLimite   = linhas.filter(l => l.saldo >= 0 && l.teto > 0 && l.saldo <= Math.max(1, Math.round(l.teto * 0.15)));
+  const totDesp    = linhas.reduce((s, l) => s + l.desp, 0);
+  const totInsuc   = linhas.reduce((s, l) => s + l.insuc, 0);
+  const totTeto    = _tetoInsucesso(totDesp, meta);
+  const dsGeral    = totDesp > 0 ? ((totDesp - totInsuc) / totDesp * 100) : 0;
+
+  if (kpis) kpis.innerHTML = `
+    <div class="detail-kpi ${estourados.length ? 'dk-red' : 'dk-green'}"><label>MLPs acima do teto</label><div class="dk-val">${estourados.length}</div><div class="dk-sub">de ${linhas.length} na semana ${j.atual}</div></div>
+    <div class="detail-kpi ${excedente ? 'dk-red' : 'dk-green'}"><label>Insucessos excedentes</label><div class="dk-val">${excedente.toLocaleString('pt-BR')}</div><div class="dk-sub">${excedente ? 'acima do que a meta permite' : 'todos dentro do teto'}</div></div>
+    <div class="detail-kpi dk-orange"><label>No limite</label><div class="dk-val">${noLimite.length}</div><div class="dk-sub">com menos de 15% do teto sobrando</div></div>
+    <div class="detail-kpi ${dsGeral >= meta ? 'dk-green' : 'dk-red'}"><label>DS consolidado</label><div class="dk-val">${fmtPt(dsGeral)}%</div><div class="dk-sub">${totInsuc.toLocaleString('pt-BR')} insucessos · teto ${totTeto.toLocaleString('pt-BR')}</div></div>
+  `;
+
+  // ── Tabela ──
+  const num = v => Math.round(v).toLocaleString('pt-BR');
+  const cellHist = (v, sufixo) => v == null
+    ? '<td data-sort="-1"><span style="color:var(--text-muted)">—</span></td>'
+    : `<td data-sort="${v}">${num(v)}${sufixo || ''}</td>`;
+
+  body.innerHTML = linhas.map(l => {
+    const h = l.hist;
+    const corSaldo = l.saldo < 0 ? 'var(--danger)' : (l.saldo <= Math.max(1, Math.round(l.teto * 0.15)) ? 'var(--warning)' : 'var(--success)');
+    const txtSaldo = l.saldo < 0 ? `−${Math.abs(l.saldo).toLocaleString('pt-BR')}` : `+${l.saldo.toLocaleString('pt-BR')}`;
+    const deltaDs = l.dDs == null ? '' :
+      `<br><span style="font-size:9px;color:${l.dDs >= 0 ? 'var(--success)' : 'var(--danger)'}">${l.dDs >= 0 ? '▲ +' : '▼ '}${fmtPt(l.dDs)} pp</span>`;
+    return `<tr>
+      <td><strong>${l.mlp}</strong></td>
+      ${cellHist(h ? h.rotas : null)}
+      ${cellHist(h ? h.desp : null)}
+      ${cellHist(h ? h.insuc : null)}
+      ${h ? `<td data-sort="${h.ds}"><span class="pill ${h.ds >= meta ? 'good' : 'bad'}">${fmtPt(h.ds)}%</span></td>` : '<td data-sort="-1"><span style="color:var(--text-muted)">—</span></td>'}
+      <td data-sort="${l.rotas}" style="border-left:1.5px solid var(--border-strong)">${l.rotas.toLocaleString('pt-BR')}</td>
+      <td data-sort="${l.desp}">${l.desp.toLocaleString('pt-BR')}</td>
+      <td data-sort="${l.insuc}">${l.insuc.toLocaleString('pt-BR')}</td>
+      <td data-sort="${l.teto}"><strong>${l.teto.toLocaleString('pt-BR')}</strong></td>
+      <td data-sort="${l.saldo}" style="color:${corSaldo};font-weight:800">${txtSaldo}</td>
+      <td data-sort="${l.ds}"><span class="pill ${l.ds >= meta ? 'good' : 'bad'}">${fmtPt(l.ds)}%</span>${deltaDs}</td>
+      <td data-sort="${l.orhc == null ? -1 : l.orhc}">${l.orhc == null ? '<span style="color:var(--text-muted)">—</span>' : `<span class="pill ${l.orhc >= 85 ? 'good' : 'bad'}">${fmtPt(l.orhc)}%</span>`}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="12" style="padding:16px;color:var(--text-muted)">Nenhum MLP no recorte filtrado.</td></tr>`;
+
+  if (foot) {
+    const totRotas = linhas.reduce((s, l) => s + l.rotas, 0);
+    const saldoTot = totTeto - totInsuc;
+    foot.innerHTML = `<tr style="background:var(--surface-1);font-weight:700">
+      <td>Total</td>
+      <td colspan="4" style="border-left:1.5px solid var(--border-strong);color:var(--text-muted);font-weight:400">${nSemAnt ? `média de ${nSemAnt} semana${nSemAnt > 1 ? 's' : ''}` : 'sem histórico'}</td>
+      <td style="border-left:1.5px solid var(--border-strong)">${totRotas.toLocaleString('pt-BR')}</td>
+      <td>${totDesp.toLocaleString('pt-BR')}</td>
+      <td>${totInsuc.toLocaleString('pt-BR')}</td>
+      <td>${totTeto.toLocaleString('pt-BR')}</td>
+      <td style="color:${saldoTot < 0 ? 'var(--danger)' : 'var(--success)'};font-weight:800">${saldoTot < 0 ? '−' : '+'}${Math.abs(saldoTot).toLocaleString('pt-BR')}</td>
+      <td><span class="pill ${dsGeral >= meta ? 'good' : 'bad'}">${fmtPt(dsGeral)}%</span></td>
+      <td>—</td>
+    </tr>`;
+  }
+
+  if (nota) {
+    nota.innerHTML = nSemAnt
+      ? `Histórico: média por semana de <strong>${j.anteriores.length}</strong> semana(s) — ${j.anteriores.map(s => 'sem ' + s).join(', ')}. Semana atual: <strong>sem ${j.atual}</strong>. Se ela ainda estiver em curso, o teto cresce conforme o volume for despachado.`
+      : `Não há semanas anteriores no recorte para comparar — só a semana ${j.atual}. Amplie o filtro de data para ganhar histórico.`;
+  }
+}
+
+function copyDsBudget() {
+  const j = _dsBudgetJanelas();
+  if (!j) { showError('Nada para copiar.'); return; }
+  const meta = _dsBudgetMeta;
+  const aggAtual = _dsBudgetAgg(j.rowsAtual), aggAnt = _dsBudgetAgg(j.rowsAnt);
+  const nSemAnt = j.anteriores.length;
+  const fx = v => (v == null ? '' : String(v).replace('.', ','));
+  const head = ['MLP', 'Rotas/sem (hist)', 'Desp/sem (hist)', 'Insuc/sem (hist)', 'DS medio (hist) %',
+                'Rotas', 'Despachados', 'Insucessos', 'Teto', 'Saldo', 'DS %', 'ORHC %'];
+  const linhas = [...aggAtual.entries()].map(([mlp, a]) => {
+    const insuc = Math.max(0, a.desp - a.entr);
+    const teto = _tetoInsucesso(a.desp, meta);
+    const ds = a.desp > 0 ? (a.entr / a.desp * 100) : 0;
+    const orhc = a.orhcTot > 0 ? (a.orhcOk / a.orhcTot * 100) : null;
+    const h = aggAnt.get(mlp);
+    const hSem = h ? (h.semanas.size || nSemAnt || 1) : 0;
+    return [mlp,
+      h ? Math.round(h.rotas / hSem) : '', h ? Math.round(h.desp / hSem) : '',
+      h ? Math.round(Math.max(0, h.desp - h.entr) / hSem) : '',
+      h && h.desp > 0 ? fx((h.entr / h.desp * 100).toFixed(2)) : '',
+      a.rotas, Math.round(a.desp), insuc, teto, teto - insuc,
+      fx(ds.toFixed(2)), orhc == null ? '' : fx(orhc.toFixed(2)),
+    ].join('\t');
+  });
+  navigator.clipboard.writeText([head.join('\t'), ...linhas].join('\n'))
+    .then(() => showError(`Budget de insucessos copiado (meta ${fmtPt(meta)}%, semana ${j.atual}).`))
+    .catch(() => showError('Não foi possível copiar.'));
+}
+
+/* ══════════════════════════════════════════
    TAB: SHARE DE PACOTES & ROTAS
 
    Duas contas diferentes convivem aqui, e a diferença entre elas é a origem
@@ -3931,7 +4225,7 @@ function renderDobraDrivers() {
   });
 
   const dobras = [...groups.values()].filter(g => g.rows.length >= 2).map(g => {
-    const ciclos = COL.CICLO ? [...new Set(g.rows.map(r => (r[COL.CICLO]||'').trim()).filter(Boolean))] : [];
+    const ciclos = cicloCol() ? [...new Set(g.rows.map(r => (r[cicloCol()]||'').trim()).filter(Boolean))] : [];
     const mlps   = [...new Set(g.rows.map(r => (r[COL.CARRIER]||'').trim()).filter(Boolean))];
     const bases  = [...new Set(g.rows.map(r => (r[COL.BASE]||'').trim()).filter(Boolean))];
     const tipos  = COL.TIPO_VEICULO ? [...new Set(g.rows.map(r => (r[COL.TIPO_VEICULO]||'').trim()).filter(Boolean))] : [];
@@ -4005,7 +4299,7 @@ function renderDobraPlacas() {
   });
 
   const dobras = [...groups.values()].filter(g => g.rows.length >= 2).map(g => {
-    const ciclos  = COL.CICLO ? [...new Set(g.rows.map(r => (r[COL.CICLO]||'').trim()).filter(Boolean))] : [];
+    const ciclos  = cicloCol() ? [...new Set(g.rows.map(r => (r[cicloCol()]||'').trim()).filter(Boolean))] : [];
     const mlps    = [...new Set(g.rows.map(r => (r[COL.CARRIER]||'').trim()).filter(Boolean))];
     const bases   = [...new Set(g.rows.map(r => (r[COL.BASE]||'').trim()).filter(Boolean))];
     const tipos   = COL.TIPO_VEICULO ? [...new Set(g.rows.map(r => (r[COL.TIPO_VEICULO]||'').trim()).filter(Boolean))] : [];
@@ -4831,7 +5125,7 @@ const msMeta  = {
   TipoRota:{ trigger:'filterTipoRota',drop:'dropTipoRota',opts:'optTipoRota',search:'searchTipoRota',col:()=>COL.TIPO_ROTA,    label:'Todas' },
   Semana:  { trigger:'filterSemana',  drop:'dropSemana',  opts:'optSemana',  search:'searchSemana',  col:()=>COL.SEMANA,       label:'Todas' },
   Data:    { trigger:'filterData',    drop:'dropData',    opts:'optData',    search:'searchData',    col:()=>COL.DATA,         label:'Todas' },
-  Ciclo:   { trigger:'filterCiclo',   drop:'dropCiclo',   opts:'optCiclo',   search:'searchCiclo',   col:()=>COL.CICLO,        label:'Todos' },
+  Ciclo:   { trigger:'filterCiclo',   drop:'dropCiclo',   opts:'optCiclo',   search:'searchCiclo',   col:()=>cicloCol(),       label:'Todos' },
   Motivo:  { trigger:'filterMotivo',  drop:'dropMotivo',  opts:'optMotivo',  search:'searchMotivo',  col:()=>null,             label:'Todos' },
   RotaIns: { trigger:'filterRotaIns', drop:'dropRotaIns', opts:'optRotaIns', search:'searchRotaIns', col:()=>null,             label:'Todos' },
 };
@@ -4996,7 +5290,7 @@ function populateFilters() {
   show('fgCluster', !!COL.CLUSTER);
   show('fgPlaca',   !!COL.PLACA);
   show('fgTipoRota',!!COL.TIPO_ROTA);
-  show('fgCiclo',   !!COL.CICLO);
+  show('fgCiclo',   !!cicloCol());
 }
 
 function updateDependentFilters(changed) {
@@ -5037,7 +5331,7 @@ function getFiltered(opts) {
     if (msHasVal('TipoRota')&& COL.TIPO_ROTA    && !msState.TipoRota.has((r[COL.TIPO_ROTA]||'').trim()))   return false;
     if (msHasVal('Semana')  && !msState.Semana.has((r[COL.SEMANA]||'').trim()))         return false;
     if (msHasVal('Data')    && !msState.Data.has((r[COL.DATA]||'').trim()))             return false;
-    if (msHasVal('Ciclo')   && COL.CICLO        && !msState.Ciclo.has((r[COL.CICLO]||'').trim()))       return false;
+    if (msHasVal('Ciclo')   && cicloCol()       && !msState.Ciclo.has((r[cicloCol()]||'').trim()))      return false;
     return true;
   });
 }
@@ -5055,7 +5349,7 @@ function getFilteredExceptSemana() {
     if (msHasVal('Placa')   && COL.PLACA        && !msState.Placa.has((r[COL.PLACA]||'').trim()))         return false;
     if (msHasVal('TipoRota')&& COL.TIPO_ROTA    && !msState.TipoRota.has((r[COL.TIPO_ROTA]||'').trim()))   return false;
     if (msHasVal('Data')    && !msState.Data.has((r[COL.DATA]||'').trim()))             return false;
-    if (msHasVal('Ciclo')   && COL.CICLO        && !msState.Ciclo.has((r[COL.CICLO]||'').trim()))       return false;
+    if (msHasVal('Ciclo')   && cicloCol()       && !msState.Ciclo.has((r[cicloCol()]||'').trim()))      return false;
     return true;
   });
 }
@@ -6256,6 +6550,8 @@ function renderDetailDS() {
   // Semana vs Semana
   const semMap = buildSemByDate(filtered);
   renderSemVsSemDS(semMap, 'detTblDSSemSemBody');
+
+  renderDsBudget();
 }
 
 /* ══════════════════════════════════════════
@@ -8206,6 +8502,31 @@ function normalizeRows(rows) {
     });
 }
 
+/* Erros do SDK do Grid chegam como objeto simples, sem .message — String(e) nesse caso
+   devolve "[object Object]" e a causa se perde. Esta função vasculha os formatos comuns
+   (message, error, detail, status) e, em último caso, serializa o objeto inteiro. */
+function describeError(e) {
+  if (e === null || e === undefined) return 'erro desconhecido';
+  if (typeof e === 'string') return e;
+  const partes = [];
+  if (e.message)  partes.push(String(e.message));
+  if (typeof e.error === 'string' && e.error !== e.message) partes.push(e.error);
+  else if (e.error && e.error.message) partes.push(String(e.error.message));
+  if (e.detail) partes.push(typeof e.detail === 'string' ? e.detail : JSON.stringify(e.detail));
+  const st = e.status || e.statusCode || e.code;
+  if (st) partes.push('HTTP ' + st);
+  if (!partes.length) {
+    try {
+      const j = JSON.stringify(e);
+      if (j && j !== '{}' && j !== 'null') partes.push(j);
+    } catch (_) { /* referência circular */ }
+  }
+  if (partes.length) return partes.join(' · ');
+  // Nem mensagem nem campos conhecidos: evita o inútil "[object Object]".
+  const s = String(e);
+  return s === '[object Object]' ? ('erro sem mensagem (' + (e.constructor && e.constructor.name || typeof e) + ') — veja o console') : s;
+}
+
 function getSourceTimestamp(data) {
   if (!data || !data.length) return '';
   const candidates = new Set([
@@ -8308,59 +8629,94 @@ async function carregarDadosOnline(manual = false) {
 
     if (useGridSDK) {
       // ── Leitura via Grid SDK ──
-      // Configura o SDK com o doc_id extraído da URL (ex.: /d/<docId>/view)
+      // Configura o SDK com o doc_id fixo; o pathname serve só de reserva para
+      // quando este HTML for republicado sob outro documento sem atualizar a constante.
       const docIdMatch = location.pathname.match(/\/d\/([^/]+)/);
-      const docId = docIdMatch ? docIdMatch[1] : '';
-      if (docId) Grid.configure({ docId });
+      const docId = GRID_DOC_ID || (docIdMatch ? docIdMatch[1] : '');
+      if (!docId) throw new Error('doc_id do Grid não configurado — preencha GRID_DOC_ID no topo do arquivo.');
+      Grid.configure({ docId });
 
-      // Faz a leitura em duas passagens para cobrir até 200k linhas:
-      // passagem 1: linhas 1–100000 | passagem 2: 100001–200000
-      // O SDK aceita ranges no estilo A1 notation (ex.: DASH_EXPORT!A1:BZZ100000)
-      const MAX_COLS = 'BZZ'; // mais que suficiente para 74 colunas
-      const ranges = [
-        `${GRID_SHEET_TAB}!A1:${MAX_COLS}100000`,
-        `${GRID_SHEET_TAB}!A100001:${MAX_COLS}200000`,
-      ];
+      // ── Leitura em blocos ──
+      // Um unico pedido de 100 mil linhas estoura o gateway do Grid: ele corta em ~30s
+      // e devolve 504 "Sheets API request timed out". Medido: 5k linhas = 4,3s ·
+      // 10k = 6,6s · 20k = 13,5s · 100k = 504. Entao lemos em blocos de 15 mil, com
+      // duas leituras simultaneas — tres em paralelo ja empurrou um bloco para 31s.
+      const MAX_COLS = 'CZ';   // o Sheets recorta sozinho para a extensao real (BV, 74 colunas)
+      const CHUNK = 15000;     // linhas por bloco
+      const CONCORRENCIA = 2;  // pedidos simultaneos
+      const MAX_BLOCOS = 20;   // teto de seguranca: 300 mil linhas
 
-      let headers = null;
-      let allRows = [];
+      const elInfo = document.getElementById('headerInfo');
+      const setInfo = t => { if (elInfo) elInfo.textContent = t; };
 
-      for (let i = 0; i < ranges.length; i++) {
-        let resp;
+      // Erros temporarios do Sheets (timeout, quota) sao marcados como retryable pelo Grid.
+      // Duas tentativas extras com espera crescente resolvem sem transformar em falha.
+      const lerRange = async (range, tentativa = 0) => {
         try {
-          resp = await Grid.sheets.get(GRID_SHEET_ID, ranges[i]);
+          return await Grid.sheets.get(GRID_SHEET_ID, range);
         } catch (e) {
-          // Segunda faixa pode lançar erro se não houver dados — ok, para aqui
-          if (i > 0) break;
-          throw e;
+          const t = describeError(e).toLowerCase();
+          // Bloco que comeca depois da ultima linha: nao e falha, e o fim da planilha.
+          // O Sheets responde "exceeds grid limits" com retry:false, e como as leituras
+          // vao em pares isso derrubava a leva inteira em vez de encerrar o laco.
+          if (t.includes('exceeds grid limits') || t.includes('out of range') || t.includes('above grid limits')) {
+            return { values: [] };
+          }
+          const temporario = t.includes('timed out') || t.includes('timeout') || t.includes('504')
+                          || t.includes('quota') || t.includes('rate limit') || t.includes('429');
+          if (!temporario || tentativa >= 2) throw e;
+          const espera = 8000 * (tentativa + 1);
+          setInfo(`Planilha ocupada — nova tentativa em ${espera / 1000}s...`);
+          await new Promise(r => setTimeout(r, espera));
+          return lerRange(range, tentativa + 1);
+        }
+      };
+
+      const valoresDe = resp => (resp && resp.values) ? resp.values : (Array.isArray(resp) ? resp : null);
+
+      // Cabecalho primeiro, sozinho: e barato e define as colunas dos demais blocos.
+      setInfo('Lendo o cabeçalho da planilha...');
+      const respCab = await lerRange(`${GRID_SHEET_TAB}!A1:${MAX_COLS}1`);
+      const valCab = valoresDe(respCab);
+      if (!valCab || !valCab.length) throw new Error('A aba ' + GRID_SHEET_TAB + ' está vazia ou não foi encontrada.');
+      const headers = valCab[0].map(h => String(h || '').replace(/^\uFEFF/, '').trim());
+
+      const allRows = [];
+      let acabou = false;
+      let bloco = 0;
+
+      // Processa uma leva de ate CONCORRENCIA blocos por vez, na ordem, ate a planilha acabar.
+      while (!acabou && bloco < MAX_BLOCOS) {
+        const leva = [];
+        for (let k = 0; k < CONCORRENCIA && bloco + k < MAX_BLOCOS; k++) {
+          const primeira = 2 + (bloco + k) * CHUNK;          // linha 1 e o cabecalho
+          const ultima   = primeira + CHUNK - 1;
+          leva.push({ idx: bloco + k, range: `${GRID_SHEET_TAB}!A${primeira}:${MAX_COLS}${ultima}` });
         }
 
-        const values = (resp && resp.values) ? resp.values : resp;
-        if (!values || !values.length) break;
+        setInfo(`Lendo a planilha — ${allRows.length.toLocaleString('pt-BR')} linhas até agora...`);
+        const respostas = await Promise.all(leva.map(b => lerRange(b.range)));
 
-        if (i === 0) {
-          // Primeira linha = cabeçalhos
-          headers = values[0].map(h => String(h || '').replace(/^\uFEFF/, '').trim());
-          for (let r = 1; r < values.length; r++) {
-            const row = {};
-            headers.forEach((h, ci) => { row[h] = values[r][ci] !== undefined ? String(values[r][ci]) : ''; });
-            allRows.push(row);
-          }
-        } else {
-          // Passagens seguintes: sem cabeçalho (já temos)
+        for (const resp of respostas) {
+          const values = valoresDe(resp);
+          if (!values || !values.length) { acabou = true; break; }
           for (let r = 0; r < values.length; r++) {
-            // Se a primeira coluna estiver vazia, chegamos no fim dos dados
-            if (!values[r][0] && !values[r][1]) break;
+            const linha = values[r];
+            // Primeira e segunda colunas vazias = fim dos dados dentro do bloco
+            if (!linha[0] && !linha[1]) { acabou = true; break; }
             const row = {};
-            headers.forEach((h, ci) => { row[h] = values[r][ci] !== undefined ? String(values[r][ci]) : ''; });
+            headers.forEach((hh, ci) => { row[hh] = linha[ci] !== undefined ? String(linha[ci]) : ''; });
             allRows.push(row);
           }
+          // Bloco veio incompleto: a planilha terminou aqui.
+          if (values.length < CHUNK) acabou = true;
+          if (acabou) break;
         }
-
-        // Se retornou menos de 99999 linhas de dados, não há mais páginas
-        const dataRows = i === 0 ? values.length - 1 : values.length;
-        if (dataRows < 99999) break;
+        bloco += leva.length;
       }
+
+      if (!allRows.length) throw new Error('Nenhuma linha de dados encontrada na aba ' + GRID_SHEET_TAB + '.');
+      setInfo(`${allRows.length.toLocaleString('pt-BR')} linhas lidas — processando...`);
 
       normalized = normalizeRows(allRows);
 
@@ -8391,11 +8747,14 @@ async function carregarDadosOnline(manual = false) {
 
   } catch (error) {
     console.error('Falha ao carregar dados:', error);
-    // Se for erro de OAuth expirado no Grid, orienta o usuário
-    const msg = String(error.message || error);
-    if (msg.includes('token') || msg.includes('oauth') || msg.includes('401')) {
+    // Detecção sobre o texto completo do erro (e não só .message), em minúsculas —
+    // o Grid devolve 401/403 com o motivo em campos variados.
+    const msg = describeError(error);
+    const low = msg.toLowerCase();
+    if (low.includes('token') || low.includes('oauth') || low.includes('credential')
+        || low.includes('401') || low.includes('403') || low.includes('unauthorized')) {
       showError('Token do Google expirado no Grid. Acesse grid.melioffice.com/google/oauth/start com VPN para reconectar.');
-    } else if (msg.includes('429')) {
+    } else if (low.includes('429') || low.includes('rate limit')) {
       showError('Muitas requisições ao Grid (429). Aguarde 1 minuto e tente atualizar novamente.');
     } else {
       showError(`Não foi possível carregar os dados: ${msg}`);
@@ -8775,9 +9134,9 @@ function gerarRelatorio(tipo) {
   // Build per-ciclo index
   const byCiclo = {};
   const _cicloDpphRoutes = {};
-  if (COL.CICLO) {
+  if (cicloCol()) {
     filtered.forEach(r => {
-      const c = (r[COL.CICLO]||'N/D').trim();
+      const c = (r[cicloCol()]||'N/D').trim();
       if (!byCiclo[c]) { byCiclo[c] = {dpphSum:0,dpphCnt:0}; _cicloDpphRoutes[c]=new Map(); }
       const rid=COL.ROUTE_ID?(r[COL.ROUTE_ID]||'').toString().trim():'';
       if(rid&&!_cicloDpphRoutes[c].has(rid)) _cicloDpphRoutes[c].set(rid,{entr:n(r[COL.ENTREGUES]),hours:COL.ORH_HOURS?n(r[COL.ORH_HOURS]):0});
@@ -8955,7 +9314,7 @@ function gerarRelatorio(tipo) {
     });
     if (goodDates.length > 0) lines.push(`Demais dias com média acima de ${Math.floor(Math.min(...goodDates.map(d=>byDate[d].dpphSum)))} pacotes/h`);
     // Por Ciclo
-    if (COL.CICLO && Object.keys(byCiclo).length > 0) {
+    if (cicloCol() && Object.keys(byCiclo).length > 0) {
       lines.push(`POR CICLO`);
       const goodCiclos = [];
       Object.entries(byCiclo).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([c,a]) => {
